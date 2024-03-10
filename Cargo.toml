@@ -1,0 +1,13 @@
+[package]
+name = "rt-weekends"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+use-64bit-float = []
+
+[build-dependencies]
+cc = "1.0"
+
+[dependencies]
+libc = "0.2.153"
