@@ -18,7 +18,7 @@ impl Scene {
 
         let mut is_parsing_sphere = false;
         let mut sphere_position: Option<Vec3F> = None;
-        let mut sphere_size: Option<Fp> = None;
+        let mut sphere_radius: Option<Fp> = None;
 
         for line in BufReader::new(file).lines() {
             let line = line.unwrap();
@@ -26,25 +26,25 @@ impl Scene {
             if is_parsing_sphere {
                 if line_trimmed.starts_with("position") {
                     let mut pos_components = line_trimmed.trim_start_matches("position:").split(",");
-                    sphere_position = Some([
+                    sphere_position = Some(Vec3F::new(
                         pos_components.next().unwrap().trim().parse::<Fp>().unwrap(),
                         pos_components.next().unwrap().trim().parse::<Fp>().unwrap(),
-                        pos_components.next().unwrap().trim().parse::<Fp>().unwrap()]);
-                } else if line_trimmed.starts_with("size") {
-                    let size = line_trimmed.trim_start_matches("size:");
-                    sphere_size = Some(size.trim().parse::<Fp>().unwrap());
+                        pos_components.next().unwrap().trim().parse::<Fp>().unwrap()));
+                } else if line_trimmed.starts_with("radius") {
+                    let radius = line_trimmed.trim_start_matches("radius:");
+                    sphere_radius = Some(radius.trim().parse::<Fp>().unwrap());
                 } else {
                     return Result::Err(
                         io::Error::new(
                             io::ErrorKind::Other,
-                            format!("parsing failed: unexpected token")));
+                            format!("parsing failed: '{}'", line)));
                 }
 
-                match (sphere_position, sphere_size) {
-                    (Some(pos), Some(size)) => {
-                        scene.spheres.push(Sphere::new(pos, size));
+                match (sphere_position, sphere_radius) {
+                    (Some(pos), Some(radius)) => {
+                        scene.spheres.push(Sphere::new(pos, radius));
                         sphere_position = None;
-                        sphere_size = None;
+                        sphere_radius = None;
                         is_parsing_sphere = false;
                     }
                     _ => { /* do nothing */ }
@@ -56,7 +56,7 @@ impl Scene {
                     return Result::Err(
                         io::Error::new(
                             io::ErrorKind::Other,
-                            format!("parsing failed: unexpected token")));
+                            format!("parsing failed: '{}'", line)));
                 }
             }
         }

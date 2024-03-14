@@ -1,4 +1,4 @@
-use crate::vecmath::Color3;
+use crate::vecmath::Color3U8;
 use libc::{c_int, c_char, c_void};
 use std::path::Path;
 use std::ffi::CString;
@@ -25,8 +25,8 @@ impl Image {
         }
     }
 
-    pub fn write_pixel(&mut self, row: u32, col: u32, pixel: Color3) {
-        self.pixels[(row * self.width + col) as usize] = pixel
+    pub fn write_pixel(&mut self, row: u32, col: u32, pixel: Color3U8) {
+        self.pixels[(row * self.width + col) as usize] = pixel.into();
     }
 
     pub fn write_bmp(&self, filename: &Path) -> Result<(), ()> {
