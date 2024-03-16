@@ -1,3 +1,5 @@
+#![feature(core_intrinsics)]
+
 mod camera;
 mod image;
 mod materials;
@@ -6,26 +8,32 @@ mod shapes;
 mod types;
 mod vecmath;
 
+use camera::Camera;
 use image::Image;
 use scene::Scene;
 use std::path::Path;
-use vecmath::Color3U8;
+use vecmath::{Color3U8, Vec3F};
+use std::intrinsics::breakpoint;
 
 fn main() {
+    // unsafe { breakpoint(); }
+
     let mut image = Image::new(800, 600);
 
-    let scene = Scene::from_file(Path::new(
-        "C:\\Projects\\rt-weekends\\assets\\two-spheres.txt",
-    ))
-    .unwrap();
+    let scene = Scene::one_sphere();
+    let camera = Camera::builder()
+        .pixel_dimension(image.width, image.height)
+        .fov(0.5)
+        .focal_length(1.0)
+        .position(Vec3F::new(0.0, 0.0, 0.0))
+        .build();
 
     for row in 0..image.height {
         for col in 0..image.width {
-            image.write_pixel(
-                row,
-                col,
-                Color3U8::new((row * 255 / image.height) as u8, 0, 0),
-            );
+            let ray = camera.gen_ray(row, col);
+            let attenuation = scene.trace(&ray);
+
+            image.write_pixel(row, col, Color3U8::from(attenuation),);
         }
     }
 

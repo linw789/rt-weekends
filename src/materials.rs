@@ -26,5 +26,6 @@ impl MaterialDiffuse {
     }
 
     pub fn scatter() -> Color3F {
+        Color3F::new(0.0, 0.0, 0.0)
     }
 }

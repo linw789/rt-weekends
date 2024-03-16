@@ -1,7 +1,7 @@
 use crate::materials::{Material, MaterialDiffuse};
-use crate::shapes::Sphere;
+use crate::shapes::{Ray, RayInterception, Sphere};
 use crate::types::Fp;
-use crate::vecmath::Vec3F;
+use crate::vecmath::{Color3F, Vec3F};
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::Path;
@@ -85,7 +85,21 @@ impl Scene {
         Result::Ok(scene)
     }
 
-    pub fn simple_scene() -> Scene {
+    pub fn one_sphere() -> Scene {
+        let mut scene = Scene {
+            spheres: Vec::new(),
+        };
+
+        scene.spheres.push(Sphere::new(
+            Vec3F::new(0.0, 0.0, -1.0),
+            0.5,
+            Material::Diffuse(MaterialDiffuse::new(Vec3F::new(0.7, 0.3, 0.3))),
+        ));
+
+        scene
+    }
+
+    pub fn two_spheres() -> Scene {
         let mut scene = Scene {
             spheres: Vec::new(),
         };
@@ -103,5 +117,21 @@ impl Scene {
         ));
 
         scene
+    }
+
+    pub fn trace(&self, ray: &Ray) -> Color3F {
+        let mut hit = false;
+        for sphere in self.spheres.iter() {
+            let ray_interception = sphere.ray_intercept(ray);
+            if ray_interception.hit {
+                hit = true;
+            }
+        }
+
+        if hit {
+            Color3F::new(0.7, 0.3, 0.3)
+        } else {
+            Color3F::new(0.0, 1.0, 0.0)
+        }
     }
 }
