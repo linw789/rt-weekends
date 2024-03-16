@@ -85,7 +85,7 @@ impl CameraBuilder {
         let viewport_delta_v = viewport_v / (self.pixel_height as Fp);
 
         let viewport_upper_left = self.position
-            - (self.focal_length * Vec3F::new(0.0, 0.0, -1.0))
+            + (self.focal_length * Vec3F::new(0.0, 0.0, -1.0))
             - 0.5 * (viewport_u + viewport_v);
 
         let pixel_start_pos = viewport_upper_left + 0.5 * (viewport_delta_u + viewport_delta_v);

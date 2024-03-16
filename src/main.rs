@@ -1,4 +1,4 @@
-#![feature(core_intrinsics)]
+// #![feature(core_intrinsics)]
 
 mod camera;
 mod image;
@@ -13,7 +13,7 @@ use image::Image;
 use scene::Scene;
 use std::path::Path;
 use vecmath::{Color3U8, Vec3F};
-use std::intrinsics::breakpoint;
+// use std::intrinsics::breakpoint;
 
 fn main() {
     // unsafe { breakpoint(); }
@@ -30,7 +30,7 @@ fn main() {
 
     for row in 0..image.height {
         for col in 0..image.width {
-            let ray = camera.gen_ray(row, col);
+            let ray = camera.gen_ray(col, row);
             let attenuation = scene.trace(&ray);
 
             image.write_pixel(row, col, Color3U8::from(attenuation),);
