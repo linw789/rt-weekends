@@ -1,6 +1,6 @@
-use crate::types::Fp as Fp;
-use std::ops::{Mul, Add, Sub};
+use crate::types::Fp;
 use std::mem::transmute;
+use std::ops::{Add, Mul, Sub};
 
 #[repr(C, packed)]
 #[derive(PartialEq, Eq, Copy, Clone)]
@@ -10,12 +10,13 @@ pub struct Vec3<T> {
     pub z: T,
 }
 
-pub type Vec3F = Vec3::<Fp>;
-pub type Color3U8 = Vec3::<u8>;
+pub type Vec3F = Vec3<Fp>;
+pub type Color3F = Vec3<Fp>;
+pub type Color3U8 = Vec3<u8>;
 
 impl<T> Vec3<T> {
     pub fn new(x: T, y: T, z: T) -> Vec3<T> {
-        Vec3::<T> { x: x, y: y, z: z }
+        Vec3::<T> { x, y, z }
     }
 }
 
@@ -52,10 +53,9 @@ impl<T: Mul<Output = T> + Copy> Mul<T> for Vec3<T> {
     }
 }
 
-pub fn dot<T: Copy>(a: &Vec3<T>, b: &Vec3<T>) -> T 
+pub fn dot<T: Copy>(a: &Vec3<T>, b: &Vec3<T>) -> T
 where
-    T: Mul<Output = T> + Add<Output = T>
+    T: Mul<Output = T> + Add<Output = T>,
 {
     a.x * b.x + a.y * b.y + a.z * b.z
 }
-

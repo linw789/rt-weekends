@@ -1,11 +1,17 @@
 use crate::vecmath::Color3U8;
-use libc::{c_int, c_char, c_void};
-use std::path::Path;
+use libc::{c_char, c_int, c_void};
 use std::ffi::CString;
+use std::path::Path;
 
 #[link(name = "stb_image_write")]
-extern {
-    fn stbi_write_bmp(filename: *const c_char, w: c_int, h: c_int, comp: c_int, data: *const c_void) -> c_int;
+extern "C" {
+    fn stbi_write_bmp(
+        filename: *const c_char,
+        w: c_int,
+        h: c_int,
+        comp: c_int,
+        data: *const c_void,
+    ) -> c_int;
 }
 
 const IMAGE_PIXEL_SIZE: usize = 3;
@@ -32,17 +38,21 @@ impl Image {
     pub fn write_bmp(&self, filename: &Path) -> Result<(), ()> {
         let filename = filename.to_str().unwrap();
         let filename = CString::new(filename).unwrap();
-        
+
         let result = unsafe {
             stbi_write_bmp(
                 filename.into_raw(),
                 self.width as c_int,
                 self.height as c_int,
                 IMAGE_PIXEL_SIZE as c_int,
-                self.pixels.as_ptr() as *const c_void)
+                self.pixels.as_ptr() as *const c_void,
+            )
         };
 
-        if result != 0 { Result::Ok(()) } else { Result::Err(()) }
+        if result != 0 {
+            Result::Ok(())
+        } else {
+            Result::Err(())
+        }
     }
 }
-

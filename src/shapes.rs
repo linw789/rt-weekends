@@ -1,10 +1,6 @@
-use crate::types::Fp as Fp;
-use crate::vecmath::{Vec3F, dot};
-
-pub struct Sphere {
-    position: Vec3F,
-    radius: Fp,
-}
+use crate::materials::Material;
+use crate::types::Fp;
+use crate::vecmath::{dot, Vec3F};
 
 pub struct Ray {
     origin: Vec3F,
@@ -18,11 +14,18 @@ pub struct RayInterception {
     is_front_face: bool,
 }
 
+pub struct Sphere {
+    position: Vec3F,
+    radius: Fp,
+    material: Material,
+}
+
 impl Sphere {
-    pub fn new(pos: Vec3F, radius: Fp) -> Sphere {
+    pub fn new(position: Vec3F, radius: Fp, material: Material) -> Sphere {
         Sphere {
-            position: pos,
-            radius: radius,
+            position,
+            radius,
+            material,
         }
     }
 
