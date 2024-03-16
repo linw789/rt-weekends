@@ -56,7 +56,7 @@ impl CameraBuilder {
 
     /// Vertical field of view, in half turns [0.0, 2.0].
     pub fn fov(mut self, fov: Fp) -> CameraBuilder {
-        assert!(fov >= 0.0 && fov <= 2.0);
+        assert!(fov > 0.0 && fov < 1.0); // (0, 180) degree
         self.fov = fov;
         self
     }
