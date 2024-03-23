@@ -1,10 +1,10 @@
 use crate::types::Fp;
 use std::mem::transmute;
-use std::ops::{Add, Div, Mul, Sub};
+use std::ops::{Add, AddAssign, Div, Mul, Sub};
 
 #[repr(C, packed)]
 #[derive(PartialEq, Eq, Copy, Clone, Default)]
-pub struct Vec3<T> {
+pub struct Vec3<T: Copy> {
     pub x: T,
     pub y: T,
     pub z: T,
@@ -14,7 +14,7 @@ pub type Vec3F = Vec3<Fp>;
 pub type Color3F = Vec3<Fp>;
 pub type Color3U8 = Vec3<u8>;
 
-impl<T> Vec3<T> {
+impl<T: Copy> Vec3<T> {
     pub fn new(x: T, y: T, z: T) -> Vec3<T> {
         Vec3::<T> { x, y, z }
     }
@@ -29,7 +29,7 @@ impl<T: Copy> Into<[T; 3]> for Vec3<T> {
     }
 }
 
-impl<T: Add<Output = T>> Add for Vec3<T> {
+impl<T: Copy + Add<Output = T>> Add for Vec3<T> {
     type Output = Self;
 
     fn add(self, other: Self) -> Self::Output {
@@ -37,7 +37,13 @@ impl<T: Add<Output = T>> Add for Vec3<T> {
     }
 }
 
-impl<T: Sub<Output = T>> Sub for Vec3<T> {
+impl<T: Copy + Add<Output = T>> AddAssign for Vec3<T> {
+    fn add_assign(&mut self, other: Vec3<T>) {
+        *self = other + *self;
+    }
+}
+
+impl<T: Copy + Sub<Output = T>> Sub for Vec3<T> {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self::Output {
@@ -45,7 +51,7 @@ impl<T: Sub<Output = T>> Sub for Vec3<T> {
     }
 }
 
-impl<T: Mul<Output = T> + Copy> Mul<T> for Vec3<T> {
+impl<T: Copy + Mul<Output = T>> Mul<T> for Vec3<T> {
     type Output = Self;
 
     fn mul(self, s: T) -> Self::Output {
@@ -53,7 +59,7 @@ impl<T: Mul<Output = T> + Copy> Mul<T> for Vec3<T> {
     }
 }
 
-impl<T: Div<Output = T> + Copy> Div<T> for Vec3<T> {
+impl<T: Copy + Div<Output = T>> Div<T> for Vec3<T> {
     type Output = Self;
 
     fn div(self, s: T) -> Self::Output {
@@ -78,6 +84,10 @@ where
 
 impl From<Vec3F> for Color3U8 {
     fn from(v: Vec3F) -> Self {
-        Color3U8::new((v.x * 255.0) as u8, (v.y * 255.0) as u8, (v.z * 255.0) as u8,)
+        Color3U8::new(
+            (v.x * 255.0) as u8,
+            (v.y * 255.0) as u8,
+            (v.z * 255.0) as u8,
+        )
     }
 }

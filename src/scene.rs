@@ -122,7 +122,8 @@ impl Scene {
     pub fn trace(&self, ray: &Ray) -> Color3F {
         let mut hit = false;
         for sphere in self.spheres.iter() {
-            let ray_interception = sphere.ray_intercept(ray);
+            let limits = 0.0..Fp::MAX;
+            let ray_interception = sphere.ray_intercept(ray, &limits);
             if ray_interception.hit {
                 hit = true;
             }

@@ -1,10 +1,10 @@
 use crate::shapes::Ray;
 use crate::types::Fp;
 use crate::vecmath::Vec3F;
-#[cfg(feature = "use-64bit-float")]
-use std::f64::consts::PI;
 #[cfg(not(feature = "use-64bit-float"))]
 use std::f32::consts::PI;
+#[cfg(feature = "use-64bit-float")]
+use std::f64::consts::PI;
 
 pub struct Camera {
     postion: Vec3F,
@@ -34,15 +34,18 @@ impl Camera {
         }
     }
 
-    pub fn gen_ray(&self, w: u32, h: u32) -> Ray {
+    pub fn gen_ray(&self, w: u32, h: u32, rx: Fp, ry: Fp) -> Ray {
         // Generate a random ray bounded by the pixel cell.
+
+        let rand_sample = (rx - 0.5) * self.viewport_delta_u + (ry - 0.5) * self.viewport_delta_v;
+
         let pixel_center = self.pixel_start_pos
             + ((w as Fp) * self.viewport_delta_u)
             + ((h as Fp) * self.viewport_delta_v);
 
         Ray {
             origin: self.postion,
-            direction: pixel_center - self.postion,
+            direction: (pixel_center + rand_sample) - self.postion,
         }
     }
 }
@@ -84,8 +87,7 @@ impl CameraBuilder {
         let viewport_delta_u = viewport_u / (self.pixel_width as Fp);
         let viewport_delta_v = viewport_v / (self.pixel_height as Fp);
 
-        let viewport_upper_left = self.position
-            + (self.focal_length * Vec3F::new(0.0, 0.0, -1.0))
+        let viewport_upper_left = self.position + (self.focal_length * Vec3F::new(0.0, 0.0, -1.0))
             - 0.5 * (viewport_u + viewport_v);
 
         let pixel_start_pos = viewport_upper_left + 0.5 * (viewport_delta_u + viewport_delta_v);

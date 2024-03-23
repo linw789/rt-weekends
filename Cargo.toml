@@ -11,3 +11,4 @@ cc = "1.0"
 
 [dependencies]
 libc = "0.2.153"
+rand = { version = "0.8.5", features = ["small_rng"] }
