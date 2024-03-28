@@ -37,6 +37,9 @@ impl Camera {
     pub fn gen_ray(&self, w: u32, h: u32, rx: Fp, ry: Fp) -> Ray {
         // Generate a random ray bounded by the pixel cell.
 
+        assert!(rx >= 0.0 && rx < 1.0);
+        assert!(ry >= 0.0 && ry < 1.0);
+
         let rand_sample = (rx - 0.5) * self.viewport_delta_u + (ry - 0.5) * self.viewport_delta_v;
 
         let pixel_center = self.pixel_start_pos

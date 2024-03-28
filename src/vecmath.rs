@@ -1,6 +1,9 @@
+extern crate num_traits;
+
 use crate::types::Fp;
 use std::mem::transmute;
 use std::ops::{Add, AddAssign, Div, Mul, Sub};
+use num_traits::identities::Zero;
 
 #[repr(C, packed)]
 #[derive(PartialEq, Eq, Copy, Clone, Default)]
@@ -17,6 +20,12 @@ pub type Color3U8 = Vec3<u8>;
 impl<T: Copy> Vec3<T> {
     pub fn new(x: T, y: T, z: T) -> Vec3<T> {
         Vec3::<T> { x, y, z }
+    }
+}
+
+impl<T: Copy + Zero> Vec3<T> {
+    pub fn zero() -> Vec3<T> {
+        Vec3::<T> { x: T::zero(), y: T::zero(), z: T::zero() }
     }
 }
 

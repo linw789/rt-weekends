@@ -28,7 +28,8 @@ fn main() {
 
     let mut image = Image::new(800, 600);
 
-    let scene = Scene::one_sphere();
+    let scene = Scene::two_spheres();
+
     let camera = Camera::builder()
         .pixel_dimension(image.width, image.height)
         .fov(0.5)
@@ -46,7 +47,7 @@ fn main() {
 
     for row in 0..image.height {
         for col in 0..image.width {
-            let mut attenuation = Vec3F::new(0.0, 0.0, 0.0);
+            let mut attenuation = Vec3F::zero();
 
             for rand_sample in pixel_samples.iter() {
                 let ray = camera.gen_ray(col, row, rand_sample.0, rand_sample.1);
