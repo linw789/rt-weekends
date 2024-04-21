@@ -12,11 +12,7 @@ mod vecmath;
 
 use camera::Camera;
 use image::Image;
-use rand::{
-    distributions::{Distribution, Uniform},
-    rngs::SmallRng,
-    SeedableRng,
-};
+use rand::{rngs::SmallRng, Rng, SeedableRng};
 use scene::Scene;
 use std::path::Path;
 use types::Fp;
@@ -37,13 +33,13 @@ fn main() {
         .position(Vec3F::new(0.0, 0.0, 0.0))
         .build();
 
-    let rand_range = Uniform::try_from(0.0..1.0 as Fp).unwrap();
-    let mut randgen = SmallRng::seed_from_u64(1234);
-    let mut pixel_samples: [(Fp, Fp); 10] = [(0.0, 0.0); 10];
-    for i in 0..pixel_samples.len() {
-        pixel_samples[i].0 = rand_range.sample(&mut randgen);
-        pixel_samples[i].1 = rand_range.sample(&mut randgen);
-    }
+    let mut rand = SmallRng::seed_from_u64(131);
+    let pixel_samples: [(Fp, Fp); 10] = std::array::from_fn(|_| {
+        (
+            rand.gen_range(0.0..1.0 as Fp),
+            rand.gen_range(0.0..1.0 as Fp),
+        )
+    });
 
     for row in 0..image.height {
         for col in 0..image.width {
@@ -51,7 +47,7 @@ fn main() {
 
             for rand_sample in pixel_samples.iter() {
                 let ray = camera.gen_ray(col, row, rand_sample.0, rand_sample.1);
-                attenuation += scene.trace(&ray);
+                attenuation += scene.trace(&ray, &mut rand, 0);
             }
 
             image.write_pixel(row, col, Color3U8::from(attenuation));

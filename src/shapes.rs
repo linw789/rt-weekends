@@ -1,6 +1,6 @@
 use crate::materials::Material;
 use crate::types::Fp;
-use crate::vecmath::{dot, Vec3F};
+use crate::vecmath::{dot, Vec3F, Color3F};
 use std::ops::Range;
 
 pub struct Ray {
@@ -8,16 +8,18 @@ pub struct Ray {
     pub direction: Vec3F,
 }
 
+#[derive(Copy, Clone, Default)]
 pub struct RayInterception {
     pub hit: bool,
     pub t: Fp,
+    pub hit_point: Vec3F,
     pub normal: Vec3F,
 }
 
 pub struct Sphere {
     position: Vec3F,
     radius: Fp,
-    material: Material,
+    pub material: Material,
 }
 
 impl Sphere {
@@ -57,8 +59,17 @@ impl Sphere {
             }
         }
 
-        let normal = (ray.origin + (t * ray.direction) - self.position) / self.radius;
+        let hit_point = ray.origin + (t * ray.direction);
+        let normal = (hit_point - self.position) / self.radius;
 
-        RayInterception { hit, t, normal }
+        RayInterception { hit, t, hit_point, normal, }
+    }
+
+    pub fn scatter<R: rand::Rng>(
+        &self,
+        interception: &RayInterception,
+        rand: &mut R,
+    ) -> Option<(Ray, Color3F)> {
+        self.scatter(interception, rand)
     }
 }

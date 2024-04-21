@@ -1,9 +1,9 @@
 extern crate num_traits;
 
 use crate::types::Fp;
+use num_traits::{identities::Zero, Float, Num};
 use std::mem::transmute;
-use std::ops::{Add, AddAssign, Div, Mul, Sub};
-use num_traits::identities::Zero;
+use std::ops::{Add, AddAssign, Div, Mul, Range, Sub};
 
 #[repr(C, packed)]
 #[derive(PartialEq, Eq, Copy, Clone, Default)]
@@ -18,14 +18,42 @@ pub type Color3F = Vec3<Fp>;
 pub type Color3U8 = Vec3<u8>;
 
 impl<T: Copy> Vec3<T> {
-    pub fn new(x: T, y: T, z: T) -> Vec3<T> {
-        Vec3::<T> { x, y, z }
+    pub fn new(x: T, y: T, z: T) -> Self {
+        Self { x, y, z }
+    }
+}
+
+impl<T: Copy + Mul<Output = T> + Add<Output = T>> Vec3<T> {
+    pub fn length_squared(&self) -> T {
+        self.x * self.x + self.y * self.y + self.z * self.z
     }
 }
 
 impl<T: Copy + Zero> Vec3<T> {
-    pub fn zero() -> Vec3<T> {
-        Vec3::<T> { x: T::zero(), y: T::zero(), z: T::zero() }
+    pub fn zero() -> Self {
+        Self {
+            x: T::zero(),
+            y: T::zero(),
+            z: T::zero(),
+        }
+    }
+}
+
+impl Vec3<Fp> {
+    pub fn random_fp_range<R: rand::Rng>(rand: &mut R, range: Range<Fp>) -> Self {
+        Self {
+            x: rand.gen_range(range.clone()),
+            y: rand.gen_range(range.clone()),
+            z: rand.gen_range(range.clone()),
+        }
+    }
+
+    pub fn length(&self) -> Fp {
+        self.length_squared().sqrt()
+    }
+
+    pub fn normalized(&self) -> Self {
+        *self / self.length()
     }
 }
 

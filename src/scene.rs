@@ -12,6 +12,8 @@ pub struct Scene {
 }
 
 impl Scene {
+    const TRACE_MAX_DEPTH: u32 = 10;
+
     pub fn from_file(filepath: &Path) -> io::Result<Scene> {
         let file = File::open(filepath)?;
 
@@ -119,20 +121,36 @@ impl Scene {
         scene
     }
 
-    pub fn trace(&self, ray: &Ray) -> Color3F {
-        let mut hit = false;
+    pub fn trace<R: rand::Rng>(&self, ray: &Ray, rand: &mut R, depth: u32) -> Color3F {
+        if depth > Self::TRACE_MAX_DEPTH {
+            return Color3F::zero();
+        }
+
+        let mut nearest_interception = RayInterception { t: Fp::MAX, ..Default::default() };
+        let mut nearest_material: Option<&Material> = None;
+
         for sphere in self.spheres.iter() {
             let limits = 0.0..Fp::MAX;
-            let ray_interception = sphere.ray_intercept(ray, &limits);
-            if ray_interception.hit {
-                hit = true;
+            let interception = sphere.ray_intercept(ray, &limits);
+            if interception.hit && interception.t < nearest_interception.t {
+                nearest_interception = interception;
+                nearest_material = Some(&sphere.material);
             }
         }
 
-        if hit {
-            Color3F::new(0.7, 0.3, 0.3)
+        let color = if nearest_interception.hit {
+            let material = nearest_material.unwrap();
+            match material.scatter(&nearest_interception, rand) {
+                Some((scattered_ray, _)) => self.trace(&scattered_ray, rand, depth + 1), 
+                None => Color3F::zero(),
+            }
         } else {
-            Color3F::new(0.0, 1.0, 0.0)
-        }
+            // simulate the sky color
+            let ray_dir_normalized = ray.direction.normalized();
+            let a = 0.5 * (ray_dir_normalized.y + 1.0);
+            Color3F::new(1.0, 1.0, 1.0) * (1.0 - a) + Color3F::new(0.5, 0.7, 1.0) * a
+        };
+
+        color
     }
 }
