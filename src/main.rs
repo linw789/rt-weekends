@@ -43,14 +43,16 @@ fn main() {
 
     for row in 0..image.height {
         for col in 0..image.width {
-            let mut attenuation = Vec3F::zero();
+            let mut pixel_color = Vec3F::zero();
 
             for rand_sample in pixel_samples.iter() {
                 let ray = camera.gen_ray(col, row, rand_sample.0, rand_sample.1);
-                attenuation += scene.trace(&ray, &mut rand, 0);
+                pixel_color += scene.trace(&ray, &mut rand, 0);
             }
 
-            image.write_pixel(row, col, Color3U8::from(attenuation));
+            pixel_color = pixel_color / (pixel_samples.len() as Fp);
+
+            image.write_pixel(row, col, Color3U8::from(pixel_color));
         }
     }
 
