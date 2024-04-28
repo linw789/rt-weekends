@@ -16,8 +16,15 @@ use rand::{rngs::SmallRng, Rng, SeedableRng};
 use scene::Scene;
 use std::path::Path;
 use types::Fp;
-use vecmath::{Color3U8, Vec3F};
+use vecmath::{Color3F, Color3U8, Vec3F};
 // use std::intrinsics::breakpoint;
+
+fn linear_to_gamma(color: & Color3F) -> Color3F {
+    Color3F::new(
+        if color.x > 0.0 { color.x.sqrt() } else { 0.0 },
+        if color.y > 0.0 { color.y.sqrt() } else { 0.0 },
+        if color.z > 0.0 { color.z.sqrt() } else { 0.0 },)
+}
 
 fn main() {
     // unsafe { breakpoint(); }
@@ -51,6 +58,7 @@ fn main() {
             }
 
             pixel_color = pixel_color / (pixel_samples.len() as Fp);
+            pixel_color = linear_to_gamma(&pixel_color);
 
             image.write_pixel(row, col, Color3U8::from(pixel_color));
         }
