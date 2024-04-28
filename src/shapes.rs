@@ -61,6 +61,12 @@ impl Sphere {
 
         let hit_point = ray.origin + (t * ray.direction);
         let normal = (hit_point - self.position) / self.radius;
+        let normal = if dot(&normal, &ray.direction) > 0.0 {
+            // Make `normal` point to the opposite direction as `ray`.
+            normal * -1.0
+        } else {
+            normal 
+        };
 
         RayIntersection { hit, t, hit_point, normal, }
     }

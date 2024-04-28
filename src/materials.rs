@@ -31,19 +31,26 @@ impl MaterialDiffuse {
         intersection: &RayIntersection,
         rand: &mut R,
     ) -> Option<(Ray, Color3F)> {
-        let scattered_ray = loop {
+        // Pick a random point on a unit sphere.
+        let rand_point = loop {
             let random_ray = Vec3F::random_fp_range(rand, -1.0..1.0);
             if random_ray.length_squared() < 1.0 {
                 break random_ray;
             }
         };
-
-        let scattered_ray = scattered_ray.normalized();
-        let scattered_ray = if dot(&scattered_ray, &intersection.normal) < 0.0 {
-            scattered_ray * -1.0
+        let rand_point = if rand_point.length_squared() > 0.0 {
+            rand_point.normalized()
         } else {
-            scattered_ray
+            rand_point
         };
+
+        // unit_sphere_center = hit_point + normal
+        // rand_sphere_point = rand_point + unit_sphere_center = rand_point + hit_point + normal
+        // scattered_ray = rand_sphere_point - hit_point = (rand_point + hit_point + normal) - hit_point = rand_point + normal
+
+        // Because `normal` always points to the opposite direction as the original intersecting
+        // ray, so does the `scattered_ray`.
+        let scattered_ray = rand_point + intersection.normal;
 
         Some((
             Ray {
