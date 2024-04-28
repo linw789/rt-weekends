@@ -130,7 +130,7 @@ impl Scene {
         let mut nearest_material: Option<&Material> = None;
 
         for sphere in self.spheres.iter() {
-            let limits = 0.0..Fp::MAX;
+            let limits = 0.0078125..Fp::MAX;
             let intersection = sphere.ray_intercept(ray, &limits);
             if intersection.hit && intersection.t < nearest_intersection.t {
                 nearest_intersection = intersection;
@@ -141,7 +141,7 @@ impl Scene {
         let color = if nearest_intersection.hit {
             let material = nearest_material.unwrap();
             match material.scatter(&nearest_intersection, rand) {
-                Some((scattered_ray, _)) => self.trace(&scattered_ray, rand, depth + 1) * 0.5, 
+                Some((scattered_ray, _)) => 0.5 * self.trace(&scattered_ray, rand, depth + 1), 
                 None => Color3F::zero(),
             }
         } else {
