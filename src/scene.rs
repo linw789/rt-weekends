@@ -1,5 +1,5 @@
 use crate::materials::{Material, MaterialDiffuse};
-use crate::shapes::{Ray, RayInterception, Sphere};
+use crate::shapes::{Ray, RayIntersection, Sphere};
 use crate::types::Fp;
 use crate::vecmath::{Color3F, Vec3F};
 use std::fs::File;
@@ -126,22 +126,22 @@ impl Scene {
             return Color3F::zero();
         }
 
-        let mut nearest_interception = RayInterception { t: Fp::MAX, ..Default::default() };
+        let mut nearest_intersection = RayIntersection { t: Fp::MAX, ..Default::default() };
         let mut nearest_material: Option<&Material> = None;
 
         for sphere in self.spheres.iter() {
             let limits = 0.0..Fp::MAX;
-            let interception = sphere.ray_intercept(ray, &limits);
-            if interception.hit && interception.t < nearest_interception.t {
-                nearest_interception = interception;
+            let intersection = sphere.ray_intercept(ray, &limits);
+            if intersection.hit && intersection.t < nearest_intersection.t {
+                nearest_intersection = intersection;
                 nearest_material = Some(&sphere.material);
             }
         }
 
-        let color = if nearest_interception.hit {
+        let color = if nearest_intersection.hit {
             let material = nearest_material.unwrap();
-            match material.scatter(&nearest_interception, rand) {
-                Some((scattered_ray, _)) => self.trace(&scattered_ray, rand, depth + 1), 
+            match material.scatter(&nearest_intersection, rand) {
+                Some((scattered_ray, _)) => self.trace(&scattered_ray, rand, depth + 1) * 0.5, 
                 None => Color3F::zero(),
             }
         } else {

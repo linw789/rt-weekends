@@ -9,7 +9,7 @@ pub struct Ray {
 }
 
 #[derive(Copy, Clone, Default)]
-pub struct RayInterception {
+pub struct RayIntersection {
     pub hit: bool,
     pub t: Fp,
     pub hit_point: Vec3F,
@@ -31,13 +31,13 @@ impl Sphere {
         }
     }
 
-    pub fn ray_intercept(&self, ray: &Ray, limits: &Range<Fp>) -> RayInterception {
+    pub fn ray_intercept(&self, ray: &Ray, limits: &Range<Fp>) -> RayIntersection {
         let center_to_origin = ray.origin - self.position;
 
         // Calculate sphere quadratic coefficients.
         let a = dot(&ray.direction, &ray.direction);
         let half_b = dot(&center_to_origin, &ray.direction);
-        let c = dot(&center_to_origin, &center_to_origin) - self.radius * self.radius;
+        let c = center_to_origin.length_squared() - self.radius * self.radius;
 
         let discriminant = half_b * half_b - a * c;
 
@@ -62,12 +62,12 @@ impl Sphere {
         let hit_point = ray.origin + (t * ray.direction);
         let normal = (hit_point - self.position) / self.radius;
 
-        RayInterception { hit, t, hit_point, normal, }
+        RayIntersection { hit, t, hit_point, normal, }
     }
 
     pub fn scatter<R: rand::Rng>(
         &self,
-        interception: &RayInterception,
+        interception: &RayIntersection,
         rand: &mut R,
     ) -> Option<(Ray, Color3F)> {
         self.scatter(interception, rand)
