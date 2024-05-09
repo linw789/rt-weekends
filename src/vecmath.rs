@@ -55,6 +55,14 @@ impl Vec3<Fp> {
     pub fn normalized(&self) -> Self {
         *self / self.length()
     }
+
+    pub fn approx_zero(&self) -> bool {
+        let threshold = 1e-8;
+
+        (self.x > -threshold && self.x < threshold) &&
+        (self.y > -threshold && self.y < threshold) &&
+        (self.z > -threshold && self.z < threshold) 
+    }
 }
 
 impl<T: Copy> Into<[T; 3]> for Vec3<T> {
