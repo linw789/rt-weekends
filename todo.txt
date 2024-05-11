@@ -1,1 +1,2 @@
-[ ] Implement diffuse material.
+[ ] Implement metal material.
+[x] Implement diffuse material.

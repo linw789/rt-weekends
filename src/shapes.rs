@@ -1,6 +1,6 @@
 use crate::materials::Material;
 use crate::types::Fp;
-use crate::vecmath::{dot, Vec3F, Color3F};
+use crate::vecmath::{dot, Color3F, Vec3F};
 use std::ops::Range;
 
 pub struct Ray {
@@ -65,10 +65,15 @@ impl Sphere {
             // Make `normal` point to the opposite direction as `ray`.
             normal * -1.0
         } else {
-            normal 
+            normal
         };
 
-        RayIntersection { hit, t, hit_point, normal, }
+        RayIntersection {
+            hit,
+            t,
+            hit_point,
+            normal,
+        }
     }
 
     pub fn scatter<R: rand::Rng>(

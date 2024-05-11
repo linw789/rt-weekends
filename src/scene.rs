@@ -1,4 +1,4 @@
-use crate::materials::{Material, MaterialDiffuse};
+use crate::materials::{Material, MaterialDiffuse, MaterialMetal};
 use crate::shapes::{Ray, RayIntersection, Sphere};
 use crate::types::Fp;
 use crate::vecmath::{Color3F, Vec3F};
@@ -95,28 +95,60 @@ impl Scene {
         scene.spheres.push(Sphere::new(
             Vec3F::new(0.0, 0.0, -1.0),
             0.5,
-            Material::Diffuse(MaterialDiffuse::new(Vec3F::new(0.7, 0.3, 0.3))),
+            Material::Diffuse(MaterialDiffuse::new(Color3F::new(0.7, 0.3, 0.3))),
         ));
 
         scene
     }
 
     pub fn two_spheres() -> Scene {
-        let mut scene = Scene {
-            spheres: Vec::new(),
+        let scene = Scene {
+            spheres: vec![
+                Sphere::new(
+                    Vec3F::new(0.0, -100.5, -1.0),
+                    100.0,
+                    Material::Diffuse(MaterialDiffuse::new(Color3F::new(0.7, 0.3, 0.3))),
+                ),
+                Sphere::new(
+                    Vec3F::new(0.0, 0.0, -1.0),
+                    0.5,
+                    Material::Diffuse(MaterialDiffuse::new(Color3F::new(0.8, 0.6, 0.2))),
+                ),
+            ],
         };
 
-        scene.spheres.push(Sphere::new(
-            Vec3F::new(0.0, -100.5, -1.0),
-            100.0,
-            Material::Diffuse(MaterialDiffuse::new(Vec3F::new(0.7, 0.3, 0.3))),
-        ));
+        scene
+    }
 
-        scene.spheres.push(Sphere::new(
-            Vec3F::new(0.0, 0.0, -1.0),
-            0.5,
-            Material::Diffuse(MaterialDiffuse::new(Vec3F::new(0.8, 0.6, 0.2))),
-        ));
+    pub fn three_spheres() -> Scene {
+        let scene = Scene {
+            spheres: vec![
+                // ground
+                Sphere::new(
+                    Vec3F::new(0.0, -100.5, -1.0),
+                    100.0,
+                    Material::Diffuse(MaterialDiffuse::new(Color3F::new(0.8, 0.8, 0.0))),
+                ),
+                // center
+                Sphere::new(
+                    Vec3F::new(0.0, 0.0, -1.2),
+                    0.5,
+                    Material::Diffuse(MaterialDiffuse::new(Color3F::new(0.1, 0.2, 0.5))),
+                ),
+                // left
+                Sphere::new(
+                    Vec3F::new(-1.0, 0.0, -1.0),
+                    0.5,
+                    Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.8, 0.8))),
+                ),
+                // right
+                Sphere::new(
+                    Vec3F::new(1.0, 0.0, -1.0),
+                    0.5,
+                    Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.6, 0.2))),
+                ),
+            ],
+        };
 
         scene
     }
@@ -126,7 +158,10 @@ impl Scene {
             return Color3F::zero();
         }
 
-        let mut nearest_intersection = RayIntersection { t: Fp::MAX, ..Default::default() };
+        let mut nearest_intersection = RayIntersection {
+            t: Fp::MAX,
+            ..Default::default()
+        };
         let mut nearest_material: Option<&Material> = None;
 
         for sphere in self.spheres.iter() {
@@ -140,8 +175,10 @@ impl Scene {
 
         let color = if nearest_intersection.hit {
             let material = nearest_material.unwrap();
-            match material.scatter(&nearest_intersection, rand) {
-                Some((scattered_ray, _)) => 0.5 * self.trace(&scattered_ray, rand, depth + 1), 
+            match material.scatter(ray, &nearest_intersection, rand) {
+                Some((scattered_ray, albedo)) => {
+                    albedo * self.trace(&scattered_ray, rand, depth + 1)
+                }
                 None => Color3F::zero(),
             }
         } else {

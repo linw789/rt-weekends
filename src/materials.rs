@@ -52,8 +52,11 @@ impl MaterialDiffuse {
         // Because `normal` always points to the opposite direction as the original intersecting
         // ray, so does the `scattered_ray`.
         let scattered_ray = rand_point + intersection.normal;
-        let scattered_ray = if scattered_ray.approx_zero() { intersection.normal } else { scattered_ray };
-        
+        let scattered_ray = if scattered_ray.approx_zero() {
+            intersection.normal
+        } else {
+            scattered_ray
+        };
 
         Some((
             Ray {
@@ -66,12 +69,26 @@ impl MaterialDiffuse {
 }
 
 impl MaterialMetal {
+    pub fn new(albedo: Color3F) -> MaterialMetal {
+        Self { albedo, fuzz: 0.0 }
+    }
+
     pub fn scatter<R: rand::Rng>(
         &self,
+        original_ray: &Ray,
         intersection: &RayIntersection,
         rand: &mut R,
     ) -> Option<(Ray, Color3F)> {
-        None
+        let scattered_ray = original_ray.direction
+            - dot(&original_ray.direction, &intersection.normal) * intersection.normal * 2.0;
+
+        Some((
+            Ray {
+                origin: intersection.hit_point,
+                direction: scattered_ray,
+            },
+            self.albedo,
+        ))
     }
 }
 
@@ -88,13 +105,14 @@ impl MaterialDielectric {
 impl Material {
     pub fn scatter<R: rand::Rng>(
         &self,
+        original_ray: &Ray,
         intersection: &RayIntersection,
         rand: &mut R,
     ) -> Option<(Ray, Color3F)> {
         match self {
             Material::Diffuse(mat) => mat.scatter(intersection, rand),
-            Material::Metal(mat) => mat.scatter(intersection, rand),
+            Material::Metal(mat) => mat.scatter(original_ray, intersection, rand),
             Material::Dielectric(mat) => mat.scatter(intersection, rand),
         }
-    }    
+    }
 }

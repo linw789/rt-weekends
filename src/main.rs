@@ -19,11 +19,12 @@ use types::Fp;
 use vecmath::{Color3F, Color3U8, Vec3F};
 // use std::intrinsics::breakpoint;
 
-fn linear_to_gamma(color: & Color3F) -> Color3F {
+fn linear_to_gamma(color: &Color3F) -> Color3F {
     Color3F::new(
         if color.x > 0.0 { color.x.sqrt() } else { 0.0 },
         if color.y > 0.0 { color.y.sqrt() } else { 0.0 },
-        if color.z > 0.0 { color.z.sqrt() } else { 0.0 },)
+        if color.z > 0.0 { color.z.sqrt() } else { 0.0 },
+    )
 }
 
 fn main() {
@@ -31,7 +32,7 @@ fn main() {
 
     let mut image = Image::new(800, 600);
 
-    let scene = Scene::two_spheres();
+    let scene = Scene::three_spheres();
 
     let camera = Camera::builder()
         .pixel_dimension(image.width, image.height)

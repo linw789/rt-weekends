@@ -59,9 +59,9 @@ impl Vec3<Fp> {
     pub fn approx_zero(&self) -> bool {
         let threshold = 1e-8;
 
-        (self.x > -threshold && self.x < threshold) &&
-        (self.y > -threshold && self.y < threshold) &&
-        (self.z > -threshold && self.z < threshold) 
+        (self.x > -threshold && self.x < threshold)
+            && (self.y > -threshold && self.y < threshold)
+            && (self.z > -threshold && self.z < threshold)
     }
 }
 
@@ -101,6 +101,14 @@ impl<T: Copy + Mul<Output = T>> Mul<T> for Vec3<T> {
 
     fn mul(self, s: T) -> Self::Output {
         Vec3::<T>::new(self.x * s, self.y * s, self.z * s)
+    }
+}
+
+impl<T: Copy + Mul<Output = T>> Mul<Vec3<T>> for Vec3<T> {
+    type Output = Self;
+
+    fn mul(self, other: Vec3<T>) -> Self::Output {
+        Vec3::<T>::new(self.x * other.x, self.y * other.y, self.z * other.z)
     }
 }
 
