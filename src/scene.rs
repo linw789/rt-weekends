@@ -139,13 +139,13 @@ impl Scene {
                 Sphere::new(
                     Vec3F::new(-1.0, 0.0, -1.0),
                     0.5,
-                    Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.8, 0.8))),
+                    Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.8, 0.8), 0.3)),
                 ),
                 // right
                 Sphere::new(
                     Vec3F::new(1.0, 0.0, -1.0),
                     0.5,
-                    Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.6, 0.2))),
+                    Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.6, 0.2), 1.0)),
                 ),
             ],
         };

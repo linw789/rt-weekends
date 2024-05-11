@@ -69,8 +69,17 @@ impl MaterialDiffuse {
 }
 
 impl MaterialMetal {
-    pub fn new(albedo: Color3F) -> MaterialMetal {
-        Self { albedo, fuzz: 0.0 }
+    pub fn new(albedo: Color3F, fuzz: Fp) -> MaterialMetal {
+        Self {
+            albedo,
+            fuzz: if fuzz < -1.0 {
+                -1.0
+            } else if fuzz > 1.0 {
+                1.0
+            } else {
+                fuzz
+            },
+        }
     }
 
     pub fn scatter<R: rand::Rng>(
@@ -79,24 +88,40 @@ impl MaterialMetal {
         intersection: &RayIntersection,
         rand: &mut R,
     ) -> Option<(Ray, Color3F)> {
-        let scattered_ray = original_ray.direction
+        let reflected_ray = original_ray.direction
             - dot(&original_ray.direction, &intersection.normal) * intersection.normal * 2.0;
 
-        Some((
-            Ray {
-                origin: intersection.hit_point,
-                direction: scattered_ray,
-            },
-            self.albedo,
-        ))
+        let random_unit_dir = loop {
+            let rand_dir = Vec3F::random_fp_range(rand, -1.0..1.0);
+            let len_sqr = rand_dir.length_squared();
+            if len_sqr <= 1.0 && len_sqr >= 1e-8 {
+                break rand_dir / Fp::sqrt(len_sqr);
+            }
+        };
+
+        let scattered_ray = reflected_ray.normalized() + self.fuzz * random_unit_dir;
+
+        // If the `scattered_ray` points to the opposite direction as `intersection.normal`,
+        // discard it (as if the surface absorbs the `original_ray`).
+        if dot(&scattered_ray, &intersection.normal) > 0.0 {
+            Some((
+                Ray {
+                    origin: intersection.hit_point,
+                    direction: scattered_ray,
+                },
+                self.albedo,
+            ))
+        } else {
+            None
+        }
     }
 }
 
 impl MaterialDielectric {
     pub fn scatter<R: rand::Rng>(
         &self,
-        intersection: &RayIntersection,
-        rand: &mut R,
+        _intersection: &RayIntersection,
+        _rand: &mut R,
     ) -> Option<(Ray, Color3F)> {
         None
     }
