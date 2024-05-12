@@ -7,7 +7,7 @@ To calculate refracted ray $R^\prime = R^\prime_\perp + R^\prime_\parallel$:
 $$
 R_\parallel = (R \cdot n)n \\[3pt]
 R_\perp = R - R_\parallel \\[3pt]
-R_\perp^\prime = \dfrac{sin\theta^\prime |R^\prime|}{|R_\perp|} R_\perp \\[3pt]
+R_\perp^\prime = sin\theta^\prime |R^\prime|\dfrac{R_\perp}{|R_\perp|} \\[3pt]
 \because |R^\prime| = |R| \\[3pt]
 R^\prime_\perp = \dfrac{sin\theta^\prime |R^|}{|R_\perp|} R_\perp \\[3pt]
 R^\prime_\perp = \dfrac{sin\theta^\prime}{sin\theta} R_\perp \\[3pt]

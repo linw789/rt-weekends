@@ -1,2 +1,3 @@
-[ ] Implement metal material.
+[ ] Implement dielectrics material.
+[x] Implement metal material.
 [x] Implement diffuse material.
