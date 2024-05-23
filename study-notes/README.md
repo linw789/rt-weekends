@@ -24,14 +24,14 @@ value.
 To calculate refracted ray $R^\prime = R^\prime_\perp + R^\prime_\parallel$:
 
 $$
-R_\parallel = (R \cdot n)n \\[3pt]
-R_\perp = R - R_\parallel \\[3pt]
-R_\perp^\prime = sin\theta^\prime |R^\prime|\dfrac{R_\perp}{|R_\perp|} \\[3pt]
-\because |R^\prime| = |R| \\[3pt]
-R^\prime_\perp = \dfrac{sin\theta^\prime |R^|}{|R_\perp|} R_\perp \\[3pt]
-R^\prime_\perp = \dfrac{sin\theta^\prime}{sin\theta} R_\perp \\[3pt]
-R^\prime_\perp = \dfrac{\eta}{\eta^\prime} (R - (R \cdot n)n) \\[3pt]
-\because |R^\prime_\parallel|^2 = |R^\prime|^2 - |R^\prime_\perp|^2 \land |R^\prime| = |R| \\[3pt]
+R_\parallel = (R \cdot n)n \\
+R_\perp = R - R_\parallel \\
+R_\perp^\prime = sin\theta^\prime |R^\prime|\dfrac{R_\perp}{|R_\perp|} \\
+\because |R^\prime| = |R| \\
+R^\prime_\perp = \dfrac{sin\theta^\prime |R^|}{|R_\perp|} R_\perp \\
+R^\prime_\perp = \dfrac{sin\theta^\prime}{sin\theta} R_\perp \\
+R^\prime_\perp = \dfrac{\eta}{\eta^\prime} (R - (R \cdot n)n) \\
+\because |R^\prime_\parallel|^2 = |R^\prime|^2 - |R^\prime_\perp|^2 \land |R^\prime| = |R| \\
 R^\prime_\parallel = \sqrt{|R|^2 - |R^\prime_\perp|^2} (-n)
 $$
 
