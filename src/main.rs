@@ -32,7 +32,7 @@ fn main() {
 
     let mut image = Image::new(800, 600);
 
-    let scene = Scene::three_spheres();
+    let scene = Scene::three_spheres_dielectric();
 
     let camera = Camera::builder()
         .pixel_dimension(image.width, image.height)

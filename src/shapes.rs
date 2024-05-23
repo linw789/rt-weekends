@@ -1,6 +1,6 @@
 use crate::materials::Material;
 use crate::types::Fp;
-use crate::vecmath::{dot, Color3F, Vec3F};
+use crate::vecmath::{dot, Vec3F};
 use std::ops::Range;
 
 pub struct Ray {
@@ -12,6 +12,11 @@ pub struct Ray {
 pub struct RayIntersection {
     pub hit: bool,
     pub t: Fp,
+
+    /// Whether the normal points outward away from the shape.
+    /// This is needed to determine whether to invert the refractive index of a material.
+    pub is_normal_outward: bool,
+
     pub hit_point: Vec3F,
     pub normal: Vec3F,
 }
@@ -60,27 +65,20 @@ impl Sphere {
         }
 
         let hit_point = ray.origin + (t * ray.direction);
-        let normal = (hit_point - self.position) / self.radius;
-        let normal = if dot(&normal, &ray.direction) > 0.0 {
+        let normal = (&hit_point - &self.position) / self.radius;
+        let (normal, is_normal_outward) = if dot(&normal, &ray.direction) > 0.0 {
             // Make `normal` point to the opposite direction as `ray`.
-            normal * -1.0
+            (normal * -1.0, false)
         } else {
-            normal
+            (normal, true)
         };
 
         RayIntersection {
             hit,
             t,
             hit_point,
+            is_normal_outward,
             normal,
         }
-    }
-
-    pub fn scatter<R: rand::Rng>(
-        &self,
-        interception: &RayIntersection,
-        rand: &mut R,
-    ) -> Option<(Ray, Color3F)> {
-        self.scatter(interception, rand)
     }
 }

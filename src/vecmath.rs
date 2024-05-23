@@ -1,12 +1,12 @@
 extern crate num_traits;
 
 use crate::types::Fp;
-use num_traits::{identities::Zero, Float, Num};
+use num_traits::identities::Zero;
 use std::mem::transmute;
 use std::ops::{Add, AddAssign, Div, Mul, Range, Sub};
 
 #[repr(C, packed)]
-#[derive(PartialEq, Eq, Copy, Clone, Default)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Default)]
 pub struct Vec3<T: Copy> {
     pub x: T,
     pub y: T,
@@ -82,14 +82,30 @@ impl<T: Copy + Add<Output = T>> Add for Vec3<T> {
     }
 }
 
+impl<T: Copy + Add<Output = T>> Add for &Vec3<T> {
+    type Output = Vec3<T>;
+
+    fn add(self, other: Self) -> Self::Output {
+        Vec3::<T>::new(self.x + other.x, self.y + other.y, self.z + other.z)
+    }
+}
+
 impl<T: Copy + Add<Output = T>> AddAssign for Vec3<T> {
     fn add_assign(&mut self, other: Vec3<T>) {
         *self = other + *self;
     }
 }
 
+impl<T: Copy + Sub<Output = T>> Sub for &Vec3<T> {
+    type Output = Vec3<T>;
+
+    fn sub(self, other: Self) -> Self::Output {
+        Vec3::<T>::new(self.x - other.x, self.y - other.y, self.z - other.z)
+    }
+}
+
 impl<T: Copy + Sub<Output = T>> Sub for Vec3<T> {
-    type Output = Self;
+    type Output = Vec3<T>;
 
     fn sub(self, other: Self) -> Self::Output {
         Vec3::<T>::new(self.x - other.x, self.y - other.y, self.z - other.z)
@@ -117,6 +133,14 @@ impl<T: Copy + Div<Output = T>> Div<T> for Vec3<T> {
 
     fn div(self, s: T) -> Self::Output {
         Vec3::<T>::new(self.x / s, self.y / s, self.z / s)
+    }
+}
+
+impl Mul<&Vec3<Fp>> for Fp {
+    type Output = Vec3<Fp>;
+
+    fn mul(self, v: &Vec3<Fp>) -> Self::Output {
+        Vec3::<Fp>::new(self * v.x, self * v.y, self * v.z)
     }
 }
 

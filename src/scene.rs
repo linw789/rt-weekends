@@ -1,4 +1,4 @@
-use crate::materials::{Material, MaterialDiffuse, MaterialMetal};
+use crate::materials::{Material, MaterialDielectric, MaterialDiffuse, MaterialMetal};
 use crate::shapes::{Ray, RayIntersection, Sphere};
 use crate::types::Fp;
 use crate::vecmath::{Color3F, Vec3F};
@@ -120,7 +120,7 @@ impl Scene {
         scene
     }
 
-    pub fn three_spheres() -> Scene {
+    pub fn three_spheres_metal() -> Scene {
         let scene = Scene {
             spheres: vec![
                 // ground
@@ -140,6 +140,39 @@ impl Scene {
                     Vec3F::new(-1.0, 0.0, -1.0),
                     0.5,
                     Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.8, 0.8), 0.3)),
+                ),
+                // right
+                Sphere::new(
+                    Vec3F::new(1.0, 0.0, -1.0),
+                    0.5,
+                    Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.6, 0.2), 1.0)),
+                ),
+            ],
+        };
+
+        scene
+    }
+
+    pub fn three_spheres_dielectric() -> Scene {
+        let scene = Scene {
+            spheres: vec![
+                // ground
+                Sphere::new(
+                    Vec3F::new(0.0, -100.5, -1.0),
+                    100.0,
+                    Material::Diffuse(MaterialDiffuse::new(Color3F::new(0.8, 0.8, 0.0))),
+                ),
+                // center
+                Sphere::new(
+                    Vec3F::new(0.0, 0.0, -1.2),
+                    0.5,
+                    Material::Diffuse(MaterialDiffuse::new(Color3F::new(0.1, 0.2, 0.5))),
+                ),
+                // left
+                Sphere::new(
+                    Vec3F::new(-1.0, 0.0, -1.0),
+                    0.5,
+                    Material::Dielectric(MaterialDielectric::new(Color3F::new(0.8, 0.8, 0.8), 1.5)),
                 ),
                 // right
                 Sphere::new(

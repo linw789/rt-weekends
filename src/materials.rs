@@ -12,6 +12,7 @@ pub struct MaterialMetal {
 }
 
 pub struct MaterialDielectric {
+    albedo: Color3F,
     refrac_index: Fp,
 }
 
@@ -22,7 +23,7 @@ pub enum Material {
 }
 
 impl MaterialDiffuse {
-    pub fn new(albedo: Color3F) -> MaterialDiffuse {
+    pub fn new(albedo: Color3F) -> Self {
         Self { albedo }
     }
 
@@ -69,7 +70,7 @@ impl MaterialDiffuse {
 }
 
 impl MaterialMetal {
-    pub fn new(albedo: Color3F, fuzz: Fp) -> MaterialMetal {
+    pub fn new(albedo: Color3F, fuzz: Fp) -> Self {
         Self {
             albedo,
             fuzz: if fuzz < -1.0 {
@@ -84,12 +85,12 @@ impl MaterialMetal {
 
     pub fn scatter<R: rand::Rng>(
         &self,
-        original_ray: &Ray,
+        incident_ray: &Ray,
         intersection: &RayIntersection,
         rand: &mut R,
     ) -> Option<(Ray, Color3F)> {
-        let reflected_ray = original_ray.direction
-            - dot(&original_ray.direction, &intersection.normal) * intersection.normal * 2.0;
+        let reflected_ray = incident_ray.direction
+            - dot(&incident_ray.direction, &intersection.normal) * intersection.normal * 2.0;
 
         let random_unit_dir = loop {
             let rand_dir = Vec3F::random_fp_range(rand, -1.0..1.0);
@@ -102,7 +103,7 @@ impl MaterialMetal {
         let scattered_ray = reflected_ray.normalized() + self.fuzz * random_unit_dir;
 
         // If the `scattered_ray` points to the opposite direction as `intersection.normal`,
-        // discard it (as if the surface absorbs the `original_ray`).
+        // discard it (as if the surface absorbs the `incident_ray`).
         if dot(&scattered_ray, &intersection.normal) > 0.0 {
             Some((
                 Ray {
@@ -118,26 +119,64 @@ impl MaterialMetal {
 }
 
 impl MaterialDielectric {
+    pub fn new(albedo: Color3F, refrac_index: Fp) -> Self {
+        Self {
+            albedo,
+            refrac_index,
+        }
+    }
+
     pub fn scatter<R: rand::Rng>(
         &self,
-        _intersection: &RayIntersection,
+        incident_ray: &Ray,
+        intersection: &RayIntersection,
         _rand: &mut R,
     ) -> Option<(Ray, Color3F)> {
-        None
+        let attenuation = Color3F::new(1.0, 1.0, 1.0);
+        let refrac_index = if intersection.is_normal_outward {
+            self.refrac_index
+        } else {
+            -self.refrac_index
+        };
+        let refracted_dir =
+            Self::refract(&incident_ray.direction, &intersection.normal, refrac_index);
+        Some((
+            Ray {
+                origin: intersection.hit_point,
+                direction: refracted_dir,
+            },
+            attenuation,
+        ))
+    }
+
+    /// `rafrac_index_ratio` should be refrac_index_normal / refrac_index_inv_normal where:
+    /// refrac_index_normal = refractive index of the surface the normal points to.
+    /// refrac_index_inv_normal = refractive index of the surface the normal points away.
+    fn refract(incident_dir: &Vec3F, surface_normal: &Vec3F, refrac_index_ratio: Fp) -> Vec3F {
+        let refracted_dir_perpendicular = refrac_index_ratio
+            * (incident_dir + &(dot(incident_dir, surface_normal) * surface_normal));
+        
+        let side_len = incident_dir.length_squared() - refracted_dir_perpendicular.length_squared();
+        assert!(side_len > 0.0);
+        let refracted_dir_parallel = (-1.0 * Fp::sqrt(side_len)) * surface_normal;
+
+        let refracted_dir = refracted_dir_perpendicular + refracted_dir_parallel;
+
+        refracted_dir
     }
 }
 
 impl Material {
     pub fn scatter<R: rand::Rng>(
         &self,
-        original_ray: &Ray,
+        incident_ray: &Ray,
         intersection: &RayIntersection,
         rand: &mut R,
     ) -> Option<(Ray, Color3F)> {
         match self {
             Material::Diffuse(mat) => mat.scatter(intersection, rand),
-            Material::Metal(mat) => mat.scatter(original_ray, intersection, rand),
-            Material::Dielectric(mat) => mat.scatter(intersection, rand),
+            Material::Metal(mat) => mat.scatter(incident_ray, intersection, rand),
+            Material::Dielectric(mat) => mat.scatter(incident_ray, intersection, rand),
         }
     }
 }
