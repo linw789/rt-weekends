@@ -35,10 +35,3 @@ R^\prime_\perp = \dfrac{\eta}{\eta^\prime} (R - (R \cdot n)n) \\
 R^\prime_\parallel = \sqrt{|R|^2 - |R^\prime_\perp|^2} (-n)
 $$
 
-When calculating $R^\prime_\parallel$, the term $|R|^2 - |R^\prime_\perp|^2$ could be negative, 
-which doesn't work wth square root (in this context). If we define $\dfrac{\eta}{\eta^\prime}$ as 
-a constant greater than 1, because $\dfrac{\eta}{\eta^\prime}=\dfrac{sin\theta^\prime}{sin\theta}$,
-when $\theta=90\degree$ $sin\theta^\prime$ is greater than 1, which can't happen. Physics says 
-that after $sin\theta^\prime=1$, further increasing $sin\theta$ would cause
-[total internal reflection](https://en.wikipedia.org/wiki/Total_internal_reflection).
-
