@@ -74,21 +74,155 @@ impl<T: Copy> Into<[T; 3]> for Vec3<T> {
     }
 }
 
-impl<T: Copy + Add<Output = T>> Add for Vec3<T> {
-    type Output = Self;
-
-    fn add(self, other: Self) -> Self::Output {
-        Vec3::<T>::new(self.x + other.x, self.y + other.y, self.z + other.z)
+impl From<Vec3F> for Color3U8 {
+    fn from(v: Vec3F) -> Self {
+        Color3U8::new(
+            (v.x * 255.0) as u8,
+            (v.y * 255.0) as u8,
+            (v.z * 255.0) as u8,
+        )
     }
 }
 
-impl<T: Copy + Add<Output = T>> Add for &Vec3<T> {
-    type Output = Vec3<T>;
+// Implements binary operator `T op &U`, `&T op U` and `&T op &U` based on `T op U` 
+// where `T` implements `Copy`.
+// reference: Rust core library interanl_macro.rs
+macro_rules! forward_ref_binop {
+    (impl $operator:ident, $method:ident for $t:ident, $u:ty) => {
+        impl<T> $operator<&$u> for $t<T>
+        where 
+            T: Copy + $operator<Output = T>
+        {
+            type Output = $t<T>;
 
-    fn add(self, other: Self) -> Self::Output {
-        Vec3::<T>::new(self.x + other.x, self.y + other.y, self.z + other.z)
+            #[inline]
+            #[track_caller]
+            fn $method(self, other: &$u) -> Self::Output {
+                $operator::$method(self, *other)
+            }
+        }
+
+        impl<'a, T> $operator<$u> for &'a $t<T>
+        where 
+            T: Copy + $operator<Output = T>
+        {
+            type Output = $t<T>;
+
+            #[inline]
+            #[track_caller]
+            fn $method(self, other: $u) -> Self::Output {
+                $operator::$method(*self, other)
+            }
+        }
+
+        impl<'a, T> $operator<&$u> for &'a $t<T>
+        where 
+            T: Copy + $operator<Output = T>
+        {
+            type Output = $t<T>;
+
+            #[inline]
+            #[track_caller]
+            fn $method(self, other: &$u) -> Self::Output {
+                $operator::$method(*self, other)
+            }
+        }
     }
 }
+
+macro_rules! vec3_impl_add {
+    () => {
+        impl<T> Add for Vec3<T>
+        where 
+            T: Copy + Add<Output = T> 
+        {
+            type Output = Vec3<T>;
+
+            #[inline]
+            #[track_caller]
+            fn add(self, other: Vec3<T>) -> Self::Output {
+                Vec3::<T>::new(self.x + other.x, self.y + other.y, self.z + other.z)
+            }
+        }
+
+        forward_ref_binop!(impl Add, add for Vec3, Vec3<T>);
+    }
+}
+
+macro_rules! vec3_impl_sub {
+    () => {
+        impl<T> Sub for Vec3<T>
+        where 
+            T: Copy + Sub<Output = T> 
+        {
+            type Output = Vec3<T>;
+
+            #[inline]
+            #[track_caller]
+            fn sub(self, other: Vec3<T>) -> Self::Output {
+                Vec3::<T>::new(self.x - other.x, self.y - other.y, self.z - other.z)
+            }
+        }
+
+        forward_ref_binop!(impl Sub, sub for Vec3, Vec3<T>);
+    }
+}
+
+macro_rules! vec3_impl_mul {
+    () => {
+        impl<T> Mul for Vec3<T>
+        where 
+            T: Copy + Mul<Output = T> 
+        {
+            type Output = Vec3<T>;
+
+            #[inline]
+            #[track_caller]
+            fn mul(self, other: Vec3<T>) -> Self::Output {
+                Vec3::<T>::new(self.x * other.x, self.y * other.y, self.z * other.z)
+            }
+        }
+
+        forward_ref_binop!(impl Mul, mul for Vec3, Vec3<T>);
+    }
+}
+
+macro_rules! vec3_impl_scaler_mul {
+    () => {
+        impl Mul<&Vec3<Fp>> for Fp {
+            type Output = Vec3<Fp>;
+
+            fn mul(self, v: &Vec3<Fp>) -> Self::Output {
+                Vec3::<Fp>::new(self * v.x, self * v.y, self * v.z)
+            }
+        }
+
+        impl Mul<Vec3<Fp>> for Fp {
+            type Output = Vec3<Fp>;
+
+            fn mul(self, v: Vec3<Fp>) -> Self::Output {
+                Vec3::<Fp>::new(self * v.x, self * v.y, self * v.z)
+            }
+        }
+
+        impl<T: Copy + Mul<Output = T>> Mul<T> for Vec3<T> {
+            type Output = Vec3<T>;
+
+            #[inline]
+            #[track_caller]
+            fn mul(self, s: T) -> Self::Output {
+                Vec3::<T>::new(self.x * s, self.y * s, self.z * s)
+            }
+        }
+
+        forward_ref_binop!(impl Mul, mul for Vec3, T);
+    }
+}
+
+vec3_impl_add!();
+vec3_impl_sub!();
+vec3_impl_mul!();
+vec3_impl_scaler_mul!();
 
 impl<T: Copy + Add<Output = T>> AddAssign for Vec3<T> {
     fn add_assign(&mut self, other: Vec3<T>) {
@@ -96,35 +230,9 @@ impl<T: Copy + Add<Output = T>> AddAssign for Vec3<T> {
     }
 }
 
-impl<T: Copy + Sub<Output = T>> Sub for &Vec3<T> {
-    type Output = Vec3<T>;
-
-    fn sub(self, other: Self) -> Self::Output {
-        Vec3::<T>::new(self.x - other.x, self.y - other.y, self.z - other.z)
-    }
-}
-
-impl<T: Copy + Sub<Output = T>> Sub for Vec3<T> {
-    type Output = Vec3<T>;
-
-    fn sub(self, other: Self) -> Self::Output {
-        Vec3::<T>::new(self.x - other.x, self.y - other.y, self.z - other.z)
-    }
-}
-
-impl<T: Copy + Mul<Output = T>> Mul<T> for Vec3<T> {
-    type Output = Self;
-
-    fn mul(self, s: T) -> Self::Output {
-        Vec3::<T>::new(self.x * s, self.y * s, self.z * s)
-    }
-}
-
-impl<T: Copy + Mul<Output = T>> Mul<Vec3<T>> for Vec3<T> {
-    type Output = Self;
-
-    fn mul(self, other: Vec3<T>) -> Self::Output {
-        Vec3::<T>::new(self.x * other.x, self.y * other.y, self.z * other.z)
+impl<T: Copy + Add<Output = T>> AddAssign<&Vec3<T>> for Vec3<T> {
+    fn add_assign(&mut self, other: &Vec3<T>) {
+        *self = other + *self;
     }
 }
 
@@ -136,22 +244,6 @@ impl<T: Copy + Div<Output = T>> Div<T> for Vec3<T> {
     }
 }
 
-impl Mul<&Vec3<Fp>> for Fp {
-    type Output = Vec3<Fp>;
-
-    fn mul(self, v: &Vec3<Fp>) -> Self::Output {
-        Vec3::<Fp>::new(self * v.x, self * v.y, self * v.z)
-    }
-}
-
-impl Mul<Vec3<Fp>> for Fp {
-    type Output = Vec3<Fp>;
-
-    fn mul(self, v: Vec3<Fp>) -> Self::Output {
-        Vec3::<Fp>::new(self * v.x, self * v.y, self * v.z)
-    }
-}
-
 pub fn dot<T: Copy>(a: &Vec3<T>, b: &Vec3<T>) -> T
 where
     T: Mul<Output = T> + Add<Output = T>,
@@ -159,12 +251,3 @@ where
     a.x * b.x + a.y * b.y + a.z * b.z
 }
 
-impl From<Vec3F> for Color3U8 {
-    fn from(v: Vec3F) -> Self {
-        Color3U8::new(
-            (v.x * 255.0) as u8,
-            (v.y * 255.0) as u8,
-            (v.z * 255.0) as u8,
-        )
-    }
-}
