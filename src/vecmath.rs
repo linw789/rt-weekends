@@ -3,7 +3,7 @@ extern crate num_traits;
 use crate::types::Fp;
 use num_traits::identities::Zero;
 use std::mem::transmute;
-use std::ops::{Add, AddAssign, Div, Mul, Range, Sub};
+use std::ops::{Add, AddAssign, Div, Mul, Neg, Range, Sub};
 
 #[repr(C, packed)]
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Default)]
@@ -241,6 +241,14 @@ impl<T: Copy + Div<Output = T>> Div<T> for Vec3<T> {
 
     fn div(self, s: T) -> Self::Output {
         Vec3::<T>::new(self.x / s, self.y / s, self.z / s)
+    }
+}
+
+impl<T: Copy + Neg<Output = T>> Neg for Vec3<T> {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        Vec3::<T>::new(-self.x, -self.y, -self.z)
     }
 }
 
