@@ -141,7 +141,7 @@ impl MaterialDielectric {
         &self,
         incident_ray: &Ray,
         intersection: &RayIntersection,
-        _rand: &mut R,
+        rand: &mut R,
     ) -> Option<(Ray, Color3F)> {
         let attenuation = Color3F::new(1.0, 1.0, 1.0);
 
@@ -155,7 +155,9 @@ impl MaterialDielectric {
         let cos_in_angle = Fp::min(dot(&in_dir_normalized, &(-intersection.normal)), 1.0);
         let sin_in_angle = Fp::sqrt(1.0 - cos_in_angle * cos_in_angle);
 
-        let out_dir = if refrac_index * sin_in_angle > 1.0 {
+        let no_refract = (refrac_index * sin_in_angle) > 1.0;
+        let no_refract = no_refract || (Self::reflectance(cos_in_angle, refrac_index) > rand.gen_range(0.0..1.0));
+        let out_dir = if no_refract {
             reflect(&incident_ray.direction, &intersection.normal)
         } else {
             refract(&incident_ray.direction, &intersection.normal, refrac_index)
@@ -168,6 +170,13 @@ impl MaterialDielectric {
             },
             attenuation,
         ))
+    }
+
+    fn reflectance(cos_in_angle: Fp, refrac_index: Fp) -> Fp {
+        // Schlick's approximation for reflectance.
+        let r0 = (1.0 - refrac_index) / (1.0 + refrac_index);
+        let r0 = r0 * r0;
+        r0 + (1.0 - r0) * Fp::powi(1.0 - cos_in_angle, 5)
     }
 }
 
