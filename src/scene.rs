@@ -172,7 +172,7 @@ impl Scene {
                 Sphere::new(
                     Vec3F::new(-1.0, 0.0, -1.0),
                     0.5,
-                    Material::Dielectric(MaterialDielectric::new(Color3F::new(0.8, 0.8, 0.8), 1.5)),
+                    Material::Dielectric(MaterialDielectric::new(1.0 / 1.333)),
                 ),
                 // right
                 Sphere::new(
@@ -198,7 +198,7 @@ impl Scene {
         let mut nearest_material: Option<&Material> = None;
 
         for sphere in self.spheres.iter() {
-            let limits = 0.0078125..Fp::MAX;
+            let limits = 0.0001..Fp::MAX;
             let intersection = sphere.ray_intercept(ray, &limits);
             if intersection.hit && intersection.t < nearest_intersection.t {
                 nearest_intersection = intersection;

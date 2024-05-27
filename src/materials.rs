@@ -12,7 +12,6 @@ pub struct MaterialMetal {
 }
 
 pub struct MaterialDielectric {
-    albedo: Color3F,
     refrac_index: Fp,
 }
 
@@ -20,6 +19,20 @@ pub enum Material {
     Diffuse(MaterialDiffuse),
     Metal(MaterialMetal),
     Dielectric(MaterialDielectric),
+}
+
+fn reflect(in_dir: &Vec3F, normal: &Vec3F) -> Vec3F {
+    in_dir - 2.0 * dot(in_dir, normal) * normal
+}
+
+/// `refrac_index` should be in_refrac_index / out_refrac_index where:
+/// in_refrac_index = the refractive index of the surface of the incident ray
+/// out_refrac_index = the refractive index of the surface of the outgoing ray
+fn refract(in_dir: &Vec3F, normal: &Vec3F, refrac_index: Fp) -> Vec3F {
+    let refrac_dir_perp = refrac_index * (in_dir - (dot(in_dir, normal) * normal));
+    let side_len = in_dir.length_squared() - refrac_dir_perp.length_squared();
+    let refrac_dir_parallel = -1.0 * Fp::sqrt(Fp::abs(side_len)) * normal;
+    refrac_dir_perp + refrac_dir_parallel
 }
 
 impl MaterialDiffuse {
@@ -89,8 +102,7 @@ impl MaterialMetal {
         intersection: &RayIntersection,
         rand: &mut R,
     ) -> Option<(Ray, Color3F)> {
-        let reflected_ray = incident_ray.direction
-            - dot(&incident_ray.direction, &intersection.normal) * intersection.normal * 2.0;
+        let reflected_dir = reflect(&incident_ray.direction, &intersection.normal);
 
         let random_unit_dir = loop {
             let rand_dir = Vec3F::random_fp_range(rand, -1.0..1.0);
@@ -100,7 +112,7 @@ impl MaterialMetal {
             }
         };
 
-        let scattered_ray = reflected_ray.normalized() + self.fuzz * random_unit_dir;
+        let scattered_ray = reflected_dir.normalized() + self.fuzz * random_unit_dir;
 
         // If the `scattered_ray` points to the opposite direction as `intersection.normal`,
         // discard it (as if the surface absorbs the `incident_ray`).
@@ -119,9 +131,8 @@ impl MaterialMetal {
 }
 
 impl MaterialDielectric {
-    pub fn new(albedo: Color3F, refrac_index: Fp) -> Self {
+    pub fn new(refrac_index: Fp) -> Self {
         Self {
-            albedo,
             refrac_index,
         }
     }
@@ -133,36 +144,30 @@ impl MaterialDielectric {
         _rand: &mut R,
     ) -> Option<(Ray, Color3F)> {
         let attenuation = Color3F::new(1.0, 1.0, 1.0);
+
         let refrac_index = if intersection.is_normal_outward {
-            self.refrac_index
+            1.0 / self.refrac_index
         } else {
-            -self.refrac_index
+            self.refrac_index
         };
-        let refracted_dir =
-            Self::refract(&incident_ray.direction, &intersection.normal, refrac_index);
+
+        let in_dir_normalized = incident_ray.direction.normalized();
+        let cos_in_angle = Fp::min(dot(&in_dir_normalized, &(-intersection.normal)), 1.0);
+        let sin_in_angle = Fp::sqrt(1.0 - cos_in_angle * cos_in_angle);
+
+        let out_dir = if refrac_index * sin_in_angle > 1.0 {
+            reflect(&incident_ray.direction, &intersection.normal)
+        } else {
+            refract(&incident_ray.direction, &intersection.normal, refrac_index)
+        };
+
         Some((
             Ray {
                 origin: intersection.hit_point,
-                direction: refracted_dir,
+                direction: out_dir,
             },
             attenuation,
         ))
-    }
-
-    /// `rafrac_index_ratio` should be refrac_index_normal / refrac_index_inv_normal where:
-    /// refrac_index_normal = refractive index of the surface the normal points to.
-    /// refrac_index_inv_normal = refractive index of the surface the normal points away.
-    fn refract(incident_dir: &Vec3F, surface_normal: &Vec3F, refrac_index_ratio: Fp) -> Vec3F {
-        let refracted_dir_perpendicular = refrac_index_ratio
-            * (incident_dir + &(dot(incident_dir, surface_normal) * surface_normal));
-        
-        let side_len = incident_dir.length_squared() - refracted_dir_perpendicular.length_squared();
-        assert!(side_len > 0.0);
-        let refracted_dir_parallel = (-1.0 * Fp::sqrt(side_len)) * surface_normal;
-
-        let refracted_dir = refracted_dir_perpendicular + refracted_dir_parallel;
-
-        refracted_dir
     }
 }
 
