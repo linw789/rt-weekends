@@ -186,6 +186,45 @@ impl Scene {
         scene
     }
 
+    pub fn three_spheres_hollow_glass() -> Scene {
+        let scene = Scene {
+            spheres: vec![
+                // ground
+                Sphere::new(
+                    Vec3F::new(0.0, -100.5, -1.0),
+                    100.0,
+                    Material::Diffuse(MaterialDiffuse::new(Color3F::new(0.8, 0.8, 0.0))),
+                ),
+                // center
+                Sphere::new(
+                    Vec3F::new(0.0, 0.0, -1.2),
+                    0.5,
+                    Material::Diffuse(MaterialDiffuse::new(Color3F::new(0.1, 0.2, 0.5))),
+                ),
+                // left
+                Sphere::new(
+                    Vec3F::new(-1.0, 0.0, -1.0),
+                    0.5,
+                    Material::Dielectric(MaterialDielectric::new(1.5)),
+                ),
+                // air bubble inside the left glass sphere
+                Sphere::new(
+                    Vec3F::new(-1.0, 0.0, -1.0),
+                    0.4,
+                    Material::Dielectric(MaterialDielectric::new(1.0 / 1.5)),
+                ),
+                // right
+                Sphere::new(
+                    Vec3F::new(1.0, 0.0, -1.0),
+                    0.5,
+                    Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.6, 0.2), 1.0)),
+                ),
+            ],
+        };
+
+        scene
+    }
+
     pub fn trace<R: rand::Rng>(&self, ray: &Ray, rand: &mut R, depth: u32) -> Color3F {
         if depth > Self::TRACE_MAX_DEPTH {
             return Color3F::zero();
