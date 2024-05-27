@@ -66,6 +66,6 @@ fn main() {
     }
 
     image
-        .write_bmp(Path::new("C:\\Projects\\rt-weekends\\render.bmp"))
+        .write_bmp(Path::new("/home/linw/Projects/rt-weekends/render.bmp"))
         .unwrap();
 }
