@@ -54,4 +54,10 @@ let intersection = sphere.ray_intercept(ray, &limits);
 
 [<img src="images/dieletric-bottom-black-spot-fixed.png" width="400"/>](images/dieletric-bottom-black-spot-fixed.png)
 
+## How does ray tracing work with refraction?
+
+When tracing a ray from viewing plane to a glass object, the ray hitting the glass object is actually the 
+refracted ray in real life, and the refracted ray that we calcuate is the incident ray in real life.
+According to the reversibility principle of light, this is fine.
+
 <!-- Markdeep: --><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js" charset="utf-8"></script><script src="https://morgan3d.github.io/markdeep/latest/markdeep.min.js" charset="utf-8"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>

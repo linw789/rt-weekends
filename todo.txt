@@ -1,4 +1,7 @@
 [ ] What is albedo and attenuation?
-[ ] Implement dielectrics material.
+[x] How does ray tracing work with refraction? Rays start from the viewing plan
+    and go hit and bounce through objects, then eventually hit a light source. The
+    directions of traced rays are the opposite of rays in real world. 
+[x] Implement dielectrics material.
 [x] Implement metal material.
 [x] Implement diffuse material.
