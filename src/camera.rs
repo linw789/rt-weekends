@@ -1,6 +1,6 @@
 use crate::shapes::Ray;
 use crate::types::Fp;
-use crate::vecmath::Vec3F;
+use crate::vecmath::{Vec3F, cross};
 #[cfg(not(feature = "use-64bit-float"))]
 use std::f32::consts::PI;
 #[cfg(feature = "use-64bit-float")]
@@ -20,8 +20,10 @@ pub struct CameraBuilder {
     pixel_height: u32,
 
     position: Vec3F,
+    lookat: Vec3F,
+    up: Vec3F,
 
-    fov: Fp, // vertical field of view, in half turns
+    fov: Fp, // vertical field of view, in half turns.
     focal_length: Fp,
 }
 
@@ -77,6 +79,16 @@ impl CameraBuilder {
         self
     }
 
+    pub fn lookat(mut self, dir: Vec3F) -> CameraBuilder {
+        self.lookat = dir;
+        self
+    }
+
+    pub fn up(mut self, dir: Vec3F) -> CameraBuilder {
+        self.up = dir;
+        self
+    }
+
     pub fn build(self) -> Camera {
         let aspect_ratio = (self.pixel_width as Fp) / (self.pixel_height as Fp);
 
@@ -84,13 +96,17 @@ impl CameraBuilder {
         let viewport_height = 2.0 * self.focal_length * fov_tangent;
         let viewport_width = viewport_height * aspect_ratio;
 
-        let viewport_u = Vec3F::new(viewport_width, 0.0, 0.0);
-        let viewport_v = Vec3F::new(0.0, -viewport_height, 0.0);
+        let camera_z = (self.position - self.lookat).normalized();
+        let camera_x = cross(&self.up, &camera_z).normalized();
+        let camera_y = cross(&camera_z, &camera_x);
+        
+        let viewport_u = viewport_width * camera_x;
+        let viewport_v = -viewport_height * camera_y;
 
         let viewport_delta_u = viewport_u / (self.pixel_width as Fp);
         let viewport_delta_v = viewport_v / (self.pixel_height as Fp);
 
-        let viewport_upper_left = self.position + (self.focal_length * Vec3F::new(0.0, 0.0, -1.0))
+        let viewport_upper_left = self.position - (self.focal_length * camera_z)
             - 0.5 * (viewport_u + viewport_v);
 
         let pixel_start_pos = viewport_upper_left + 0.5 * (viewport_delta_u + viewport_delta_v);

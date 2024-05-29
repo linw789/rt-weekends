@@ -36,9 +36,12 @@ fn main() {
 
     let camera = Camera::builder()
         .pixel_dimension(image.width, image.height)
-        .fov(0.5)
+        // .fov(0.5)
+        .fov(20.0 / 360.0 * 2.0)
         .focal_length(1.0)
-        .position(Vec3F::new(0.0, 0.0, 0.0))
+        .position(Vec3F::new(-2.0, 2.0, 1.0))
+        .lookat(Vec3F::new(0.0, 0.0, -1.0))
+        .up(Vec3F::new(0.0, 1.0, 0.0))
         .build();
 
     let mut rand = SmallRng::seed_from_u64(131);
@@ -66,6 +69,7 @@ fn main() {
     }
 
     image
-        .write_bmp(Path::new("/home/linw/Projects/rt-weekends/render.bmp"))
+        // .write_bmp(Path::new("/home/linw/Projects/rt-weekends/render.bmp"))
+        .write_bmp(Path::new("C:\\Projects\\rt-weekends\\render.bmp"))
         .unwrap();
 }
