@@ -184,14 +184,7 @@ impl Scene {
             ),
         ];
 
-        /*
         let mut rand = SmallRng::seed_from_u64(877);
-        let pixel_samples: [(Fp, Fp); 10] = std::array::from_fn(|_| {
-            (
-                rand.gen_range(0.0..1.0 as Fp),
-                rand.gen_range(0.0..1.0 as Fp),
-            )
-        });
 
         for x in -11..11 {
             for y in -11..11 {
@@ -200,10 +193,24 @@ impl Scene {
                     0.2,
                     y as Fp + 0.9 * rand.gen_range(0.0..1.0));
 
-
+                if (pos - Vec3F::new(4.0, 0.2, 0.0)).length() > 0.9 {
+                    let choose_material = rand.gen_range(0.0..1.0);
+                    if choose_material < 0.8 {
+                        let albedo = Color3F::new(rand.gen_range(0.0..1.0), rand.gen_range(0.0..1.0), rand.gen_range(0.0..1.0));
+                        spheres.push(
+                            Sphere::new(pos, 0.2, Material::Diffuse(MaterialDiffuse::new(albedo))));
+                    } else if choose_material < 0.95 {
+                        let albedo = Color3F::new(rand.gen_range(0.5..1.0), rand.gen_range(0.5..1.0), rand.gen_range(0.5..1.0));
+                        let fuzz = rand.gen_range(0.0..0.5);
+                        spheres.push(
+                            Sphere::new(pos, 0.2, Material::Metal(MaterialMetal::new(albedo, fuzz))));
+                    } else {
+                        spheres.push(
+                            Sphere::new(pos, 0.2, Material::Dielectric(MaterialDielectric::new(1.5))));
+                    }
+                }
             }
         }
-        */
 
         Scene { spheres }
     }

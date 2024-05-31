@@ -32,15 +32,14 @@ fn main() {
 
     let mut image = Image::new(800, 600);
 
-    let scene = Scene::three_spheres_hollow_glass();
+    let scene = Scene::many_spheres();
 
     let camera = Camera::builder()
         .pixel_dimension(image.width, image.height)
-        // .fov(0.5)
         .fov(20.0 / 360.0 * 2.0)
         .focal_length(1.0)
-        .position(Vec3F::new(-2.0, 2.0, 1.0))
-        .lookat(Vec3F::new(0.0, 0.0, -1.0))
+        .position(Vec3F::new(13.0, 2.0, 3.0))
+        .lookat(Vec3F::zero())
         .up(Vec3F::new(0.0, 1.0, 0.0))
         .build();
 
