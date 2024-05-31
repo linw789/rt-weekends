@@ -32,14 +32,15 @@ fn main() {
 
     let mut image = Image::new(800, 600);
 
-    let scene = Scene::many_spheres();
+    let scene = Scene::three_spheres_hollow_glass();
 
     let camera = Camera::builder()
         .pixel_dimension(image.width, image.height)
-        .fov(20.0 / 360.0 * 2.0)
-        .focal_length(1.0)
-        .position(Vec3F::new(13.0, 2.0, 3.0))
-        .lookat(Vec3F::zero())
+        .fov(20.0 / 180.0)
+        .focus_length(3.4)
+        .defocus_angle(10.0 / 180.0)
+        .position(Vec3F::new(-2.0, 2.0, 1.0))
+        .lookat(Vec3F::new(0.0, 0.0, -1.0))
         .up(Vec3F::new(0.0, 1.0, 0.0))
         .build();
 
@@ -56,7 +57,7 @@ fn main() {
             let mut pixel_color = Vec3F::zero();
 
             for rand_sample in pixel_samples.iter() {
-                let ray = camera.gen_ray(col, row, rand_sample.0, rand_sample.1);
+                let ray = camera.gen_ray(col, row, rand_sample.0, rand_sample.1, &mut rand);
                 pixel_color += scene.trace(&ray, &mut rand, 0);
             }
 
