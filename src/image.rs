@@ -14,7 +14,7 @@ extern "C" {
     ) -> c_int;
 }
 
-const IMAGE_PIXEL_SIZE: usize = 3;
+pub const IMAGE_PIXEL_SIZE: usize = 3;
 
 pub struct Image {
     pub width: u32,
@@ -25,14 +25,27 @@ pub struct Image {
 impl Image {
     pub fn new(width: u32, height: u32) -> Image {
         Image {
-            width: width,
-            height: height,
+            width,
+            height,
             pixels: vec![[0, 0, 0]; (width * height) as usize],
         }
     }
 
+    #[allow(dead_code)]
     pub fn write_pixel(&mut self, row: u32, col: u32, pixel: Color3U8) {
         self.pixels[(row * self.width + col) as usize] = pixel.into();
+    }
+
+    pub fn write_row(&mut self, row_index: u32, row: &[[u8; IMAGE_PIXEL_SIZE]]) {
+        assert!(row_index < self.height);
+
+        let pixel_start = (row_index * self.width) as usize;
+        for i in 0..row.len() {
+            if (i as u32) >= self.width {
+                break;
+            }
+            self.pixels[pixel_start + i] = row[i];
+        }
     }
 
     pub fn write_bmp(&self, filename: &Path) -> Result<(), ()> {

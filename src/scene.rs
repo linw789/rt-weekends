@@ -196,7 +196,7 @@ impl Scene {
                         let albedo = Color3F::new(rand.gen_range(0.0..1.0), rand.gen_range(0.0..1.0), rand.gen_range(0.0..1.0));
                         spheres.push(
                             Sphere::new(pos, 0.2, Material::Diffuse(MaterialDiffuse::new(albedo))));
-                    } else if choose_material < 0.9 {
+                     } else if choose_material < 0.9 {
                         let albedo = Color3F::new(rand.gen_range(0.5..1.0), rand.gen_range(0.5..1.0), rand.gen_range(0.5..1.0));
                         let fuzz = rand.gen_range(0.0..0.5);
                         spheres.push(
@@ -250,3 +250,6 @@ impl Scene {
         color
     }
 }
+
+unsafe impl Send for Scene {}
+unsafe impl Sync for Scene {}

@@ -153,3 +153,6 @@ impl CameraBuilder {
         }
     }
 }
+
+unsafe impl Send for Camera {}
+unsafe impl Sync for Camera {}
