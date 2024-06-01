@@ -3,9 +3,6 @@ use crate::shapes::{Ray, RayIntersection, Sphere};
 use crate::types::Fp;
 use crate::vecmath::{Color3F, Vec3F};
 use rand::{rngs::SmallRng, Rng, SeedableRng};
-use std::fs::File;
-use std::io::{self, BufRead, BufReader};
-use std::path::Path;
 use std::vec::Vec;
 
 pub struct Scene {
