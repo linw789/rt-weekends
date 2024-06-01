@@ -32,20 +32,20 @@ fn main() {
 
     let mut image = Image::new(800, 600);
 
-    let scene = Scene::three_spheres_hollow_glass();
+    let scene = Scene::many_spheres();
 
     let camera = Camera::builder()
         .pixel_dimension(image.width, image.height)
         .fov(20.0 / 180.0)
-        .focus_length(3.4)
-        .defocus_angle(10.0 / 180.0)
-        .position(Vec3F::new(-2.0, 2.0, 1.0))
-        .lookat(Vec3F::new(0.0, 0.0, -1.0))
+        .focus_length(10.0)
+        .defocus_angle(0.6 / 180.0)
+        .position(Vec3F::new(13.0, 2.0, 3.0))
+        .lookat(Vec3F::zero())
         .up(Vec3F::new(0.0, 1.0, 0.0))
         .build();
 
     let mut rand = SmallRng::seed_from_u64(131);
-    let pixel_samples: [(Fp, Fp); 10] = std::array::from_fn(|_| {
+    let pixel_samples: [(Fp, Fp); 500] = std::array::from_fn(|_| {
         (
             rand.gen_range(0.0..1.0 as Fp),
             rand.gen_range(0.0..1.0 as Fp),
