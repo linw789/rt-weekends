@@ -45,8 +45,8 @@ fn trace_row<R: rand::Rng>(scene: &Scene, camera: &Camera, row_index: u32, row_p
 }
 
 fn main() {
-    const IMAGE_WIDTH: u32 = 800;
-    const IMAGE_HEIGHT: u32 = 600;
+    const IMAGE_WIDTH: u32 = 1200;
+    const IMAGE_HEIGHT: u32 = 800;
 
     let image = Arc::new(Mutex::new(Image::new(IMAGE_WIDTH, IMAGE_HEIGHT)));
 
