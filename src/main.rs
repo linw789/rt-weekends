@@ -99,34 +99,6 @@ fn main() {
         assert!(thread.join().is_ok());
     }
 
-    /*
-    thread::scope(|_| {
-        let mut rand = SmallRng::seed_from_u64(131);
-        let pixel_samples: [(Fp, Fp); 50] = std::array::from_fn(|_| {
-            (
-                rand.gen_range(0.0..1.0 as Fp),
-                rand.gen_range(0.0..1.0 as Fp),
-            )
-        });
-
-        for row in 0..image.height {
-            for col in 0..image.width {
-                let mut pixel_color = Vec3F::zero();
-
-                for rand_sample in pixel_samples.iter() {
-                    let ray = camera.gen_ray(col, row, rand_sample.0, rand_sample.1, &mut rand);
-                    pixel_color += scene.trace(&ray, &mut rand, 0);
-                }
-
-                pixel_color = pixel_color / (pixel_samples.len() as Fp);
-                pixel_color = linear_to_gamma(&pixel_color);
-
-                image.write_pixel(row, col, Color3U8::from(pixel_color));
-            }
-        }
-    });
-    */
-
     image.lock().unwrap()
         // .write_bmp(Path::new("/home/linw/Projects/rt-weekends/render.bmp"))
         .write_bmp(Path::new("C:\\Projects\\rt-weekends\\render.bmp"))
