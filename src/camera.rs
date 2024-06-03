@@ -1,6 +1,6 @@
 use crate::shapes::Ray;
 use crate::types::Fp;
-use crate::vecmath::{Vec3F, cross};
+use crate::vecmath::{cross, Vec3F};
 #[cfg(not(feature = "use-64bit-float"))]
 use std::f32::consts::PI;
 #[cfg(feature = "use-64bit-float")]
@@ -128,20 +128,24 @@ impl CameraBuilder {
         let camera_z = (self.position - self.lookat).normalized();
         let camera_x = cross(&self.up, &camera_z).normalized();
         let camera_y = cross(&camera_z, &camera_x);
-        
+
         let viewport_u = viewport_width * camera_x;
         let viewport_v = -viewport_height * camera_y;
 
         let viewport_delta_u = viewport_u / (self.pixel_width as Fp);
         let viewport_delta_v = viewport_v / (self.pixel_height as Fp);
 
-        let viewport_upper_left = self.position - (self.focus_length * camera_z)
-            - 0.5 * (viewport_u + viewport_v);
+        let viewport_upper_left =
+            self.position - (self.focus_length * camera_z) - 0.5 * (viewport_u + viewport_v);
 
         let pixel_start_pos = viewport_upper_left + 0.5 * (viewport_delta_u + viewport_delta_v);
 
         let defocus_angle = self.defocus_angle / 2.0;
-        let defocus_disk_radius = if self.defocus_angle <= 0.0 { 0.0 } else { self.focus_length * (defocus_angle * PI).tan() };
+        let defocus_disk_radius = if self.defocus_angle <= 0.0 {
+            0.0
+        } else {
+            self.focus_length * (defocus_angle * PI).tan()
+        };
 
         Camera {
             postion: self.position,

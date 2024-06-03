@@ -132,9 +132,7 @@ impl MaterialMetal {
 
 impl MaterialDielectric {
     pub fn new(refrac_index: Fp) -> Self {
-        Self {
-            refrac_index,
-        }
+        Self { refrac_index }
     }
 
     pub fn scatter<R: rand::Rng>(
@@ -156,7 +154,8 @@ impl MaterialDielectric {
         let sin_in_angle = Fp::sqrt(1.0 - cos_in_angle * cos_in_angle);
 
         let no_refract = (refrac_index * sin_in_angle) > 1.0;
-        let no_refract = no_refract || (Self::reflectance(cos_in_angle, refrac_index) > rand.gen_range(0.0..1.0));
+        let no_refract = no_refract
+            || (Self::reflectance(cos_in_angle, refrac_index) > rand.gen_range(0.0..1.0));
         let out_dir = if no_refract {
             reflect(&incident_ray.direction, &intersection.normal)
         } else {

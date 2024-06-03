@@ -84,14 +84,14 @@ impl From<Vec3F> for Color3U8 {
     }
 }
 
-// Implements binary operator `T op &U`, `&T op U` and `&T op &U` based on `T op U` 
+// Implements binary operator `T op &U`, `&T op U` and `&T op &U` based on `T op U`
 // where `T` implements `Copy`.
 // reference: Rust core library interanl_macro.rs
 macro_rules! forward_ref_binop {
     (impl $operator:ident, $method:ident for $t:ident, $u:ty) => {
         impl<T> $operator<&$u> for $t<T>
-        where 
-            T: Copy + $operator<Output = T>
+        where
+            T: Copy + $operator<Output = T>,
         {
             type Output = $t<T>;
 
@@ -103,8 +103,8 @@ macro_rules! forward_ref_binop {
         }
 
         impl<'a, T> $operator<$u> for &'a $t<T>
-        where 
-            T: Copy + $operator<Output = T>
+        where
+            T: Copy + $operator<Output = T>,
         {
             type Output = $t<T>;
 
@@ -116,8 +116,8 @@ macro_rules! forward_ref_binop {
         }
 
         impl<'a, T> $operator<&$u> for &'a $t<T>
-        where 
-            T: Copy + $operator<Output = T>
+        where
+            T: Copy + $operator<Output = T>,
         {
             type Output = $t<T>;
 
@@ -127,14 +127,14 @@ macro_rules! forward_ref_binop {
                 $operator::$method(*self, other)
             }
         }
-    }
+    };
 }
 
 macro_rules! vec3_impl_add {
     () => {
         impl<T> Add for Vec3<T>
-        where 
-            T: Copy + Add<Output = T> 
+        where
+            T: Copy + Add<Output = T>
         {
             type Output = Vec3<T>;
 
@@ -152,8 +152,8 @@ macro_rules! vec3_impl_add {
 macro_rules! vec3_impl_sub {
     () => {
         impl<T> Sub for Vec3<T>
-        where 
-            T: Copy + Sub<Output = T> 
+        where
+            T: Copy + Sub<Output = T>
         {
             type Output = Vec3<T>;
 
@@ -171,8 +171,8 @@ macro_rules! vec3_impl_sub {
 macro_rules! vec3_impl_mul {
     () => {
         impl<T> Mul for Vec3<T>
-        where 
-            T: Copy + Mul<Output = T> 
+        where
+            T: Copy + Mul<Output = T>
         {
             type Output = Vec3<T>;
 
@@ -260,12 +260,12 @@ where
 }
 
 pub fn cross<T>(a: &Vec3<T>, b: &Vec3<T>) -> Vec3<T>
-where 
+where
     T: Copy + Mul<Output = T> + Sub<Output = T>,
 {
     Vec3::<T>::new(
         a.y * b.z - a.z * b.y,
         a.z * b.x - a.x * b.z,
-        a.x * b.y - a.y * b.x)
+        a.x * b.y - a.y * b.x,
+    )
 }
-

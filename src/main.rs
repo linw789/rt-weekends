@@ -28,7 +28,14 @@ fn linear_to_gamma(color: &Color3F) -> Color3F {
     )
 }
 
-fn trace_row<R: rand::Rng>(scene: &Scene, camera: &Camera, row_index: u32, row_pixels: &mut [[u8; IMAGE_PIXEL_SIZE]], pixel_samples: &[(Fp, Fp)], rand: &mut R) {
+fn trace_row<R: rand::Rng>(
+    scene: &Scene,
+    camera: &Camera,
+    row_index: u32,
+    row_pixels: &mut [[u8; IMAGE_PIXEL_SIZE]],
+    pixel_samples: &[(Fp, Fp)],
+    rand: &mut R,
+) {
     for col in 0..row_pixels.len() {
         let mut pixel_color = Vec3F::zero();
 
@@ -52,15 +59,17 @@ fn main() {
 
     let scene = Arc::new(Scene::many_spheres());
 
-    let camera = Arc::new(Camera::builder()
-        .pixel_dimension(IMAGE_WIDTH, IMAGE_HEIGHT)
-        .fov(20.0 / 180.0)
-        .focus_length(10.0)
-        .defocus_angle(0.6 / 180.0)
-        .position(Vec3F::new(13.0, 2.0, 3.0))
-        .lookat(Vec3F::zero())
-        .up(Vec3F::new(0.0, 1.0, 0.0))
-        .build());
+    let camera = Arc::new(
+        Camera::builder()
+            .pixel_dimension(IMAGE_WIDTH, IMAGE_HEIGHT)
+            .fov(20.0 / 180.0)
+            .focus_length(10.0)
+            .defocus_angle(0.6 / 180.0)
+            .position(Vec3F::new(13.0, 2.0, 3.0))
+            .lookat(Vec3F::zero())
+            .up(Vec3F::new(0.0, 1.0, 0.0))
+            .build(),
+    );
 
     let threads_num = thread::available_parallelism().unwrap().get() as u32;
     let rows_per_thread = IMAGE_HEIGHT / threads_num;
@@ -68,9 +77,13 @@ fn main() {
     let mut trace_threads = Vec::with_capacity(threads_num as usize);
 
     for thread_index in 0..threads_num {
-        let rows_num = if thread_index < (threads_num - 1) { rows_per_thread } else { IMAGE_HEIGHT - rows_per_thread * (threads_num - 1) };
+        let rows_num = if thread_index < (threads_num - 1) {
+            rows_per_thread
+        } else {
+            IMAGE_HEIGHT - rows_per_thread * (threads_num - 1)
+        };
         let row_start_index = thread_index * rows_per_thread;
-        
+
         let image = Arc::clone(&image);
         let scene = Arc::clone(&scene);
         let camera = Arc::clone(&camera);
@@ -84,12 +97,19 @@ fn main() {
                 )
             });
 
-            let mut row_pixels: Vec<[u8; IMAGE_PIXEL_SIZE]> = vec!();
+            let mut row_pixels: Vec<[u8; IMAGE_PIXEL_SIZE]> = vec![];
             row_pixels.resize(IMAGE_WIDTH as usize, [0, 0, 0]);
 
             for r in 0..rows_num {
                 let row_index = row_start_index + r;
-                trace_row(&scene, &camera, row_index, &mut row_pixels, &pixel_samples, &mut rand);
+                trace_row(
+                    &scene,
+                    &camera,
+                    row_index,
+                    &mut row_pixels,
+                    &pixel_samples,
+                    &mut rand,
+                );
                 image.lock().unwrap().write_row(row_index, &row_pixels);
             }
         }));
@@ -99,7 +119,9 @@ fn main() {
         assert!(thread.join().is_ok());
     }
 
-    image.lock().unwrap()
+    image
+        .lock()
+        .unwrap()
         // .write_bmp(Path::new("/home/linw/Projects/rt-weekends/render.bmp"))
         .write_bmp(Path::new("C:\\Projects\\rt-weekends\\render.bmp"))
         .unwrap();
