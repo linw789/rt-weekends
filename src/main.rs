@@ -124,10 +124,5 @@ fn main() {
     #[cfg(target_os = "linux")]
     let image_path = Path::new("/home/linw/Projects/rt-weekends/render.bmp");
 
-
-    image
-        .lock()
-        .unwrap()
-        .write_bmp(image_path)
-        .unwrap();
+    image.lock().unwrap().write_bmp(image_path).unwrap();
 }
