@@ -119,10 +119,15 @@ fn main() {
         assert!(thread.join().is_ok());
     }
 
+    #[cfg(target_os = "windows")]
+    let image_path = Path::new("C:\\Projects\\rt-weekends\\render.bmp");
+    #[cfg(target_os = "linux")]
+    let image_path = Path::new("/home/linw/Projects/rt-weekends/render.bmp");
+
+
     image
         .lock()
         .unwrap()
-        // .write_bmp(Path::new("/home/linw/Projects/rt-weekends/render.bmp"))
-        .write_bmp(Path::new("C:\\Projects\\rt-weekends\\render.bmp"))
+        .write_bmp(image_path)
         .unwrap();
 }
