@@ -15,7 +15,7 @@ use image::{Image, IMAGE_PIXEL_SIZE};
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use scene::Scene;
 use std::path::Path;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 use std::thread;
 use types::Fp;
 use vecmath::{Color3F, Color3U8, Vec3F};
@@ -56,11 +56,11 @@ fn main() {
     const IMAGE_HEIGHT: u32 = 800;
     const PIXEL_SAMPLE_SIZE: usize = 500;
 
-    let image = Arc::new(Mutex::new(Image::new(IMAGE_WIDTH, IMAGE_HEIGHT)));
+    let image = Mutex::new(Image::new(IMAGE_WIDTH, IMAGE_HEIGHT));
 
-    let scene = Arc::new(Scene::many_spheres());
+    let scene = Scene::many_spheres();
 
-    let camera = Arc::new(
+    let camera = 
         Camera::builder()
             .pixel_dimension(IMAGE_WIDTH, IMAGE_HEIGHT)
             .fov(20.0 / 180.0)
@@ -69,56 +69,57 @@ fn main() {
             .position(Vec3F::new(13.0, 2.0, 3.0))
             .lookat(Vec3F::zero())
             .up(Vec3F::new(0.0, 1.0, 0.0))
-            .build(),
-    );
+            .build();
 
     let threads_num = thread::available_parallelism().unwrap().get() as u32;
     let rows_per_thread = IMAGE_HEIGHT / threads_num;
 
-    let mut trace_threads = Vec::with_capacity(threads_num as usize);
+    thread::scope(|s| {
+        let mut trace_threads = Vec::with_capacity(threads_num as usize);
 
-    for thread_index in 0..threads_num {
-        let rows_num = if thread_index < (threads_num - 1) {
-            rows_per_thread
-        } else {
-            IMAGE_HEIGHT - rows_per_thread * (threads_num - 1)
-        };
-        let row_start_index = thread_index * rows_per_thread;
+        for thread_index in 0..threads_num {
+            let rows_num = if thread_index < (threads_num - 1) {
+                rows_per_thread
+            } else {
+                IMAGE_HEIGHT - rows_per_thread * (threads_num - 1)
+            };
+            let row_start_index = thread_index * rows_per_thread;
 
-        let image = Arc::clone(&image);
-        let scene = Arc::clone(&scene);
-        let camera = Arc::clone(&camera);
+            let image = &image;
+            let scene = &scene;
+            let camera = &camera;
 
-        trace_threads.push(thread::spawn(move || {
-            let mut rand = SmallRng::seed_from_u64(131);
-            let pixel_samples: [(Fp, Fp); PIXEL_SAMPLE_SIZE] = std::array::from_fn(|_| {
-                (
-                    rand.gen_range(0.0..1.0 as Fp),
-                    rand.gen_range(0.0..1.0 as Fp),
-                )
-            });
+            trace_threads.push(s.spawn(move || {
+                let mut rand = SmallRng::seed_from_u64(1317);
+                let pixel_samples: [(Fp, Fp); PIXEL_SAMPLE_SIZE] = std::array::from_fn(|_| {
+                    (
+                        rand.gen_range(0.0..1.0 as Fp),
+                        rand.gen_range(0.0..1.0 as Fp),
+                    )
+                });
 
-            let mut row_pixels: Vec<[u8; IMAGE_PIXEL_SIZE]> = vec![];
-            row_pixels.resize(IMAGE_WIDTH as usize, [0, 0, 0]);
+                let mut row_pixels: Vec<[u8; IMAGE_PIXEL_SIZE]> = vec![];
+                row_pixels.resize(IMAGE_WIDTH as usize, [0, 0, 0]);
 
-            for r in 0..rows_num {
-                let row_index = row_start_index + r;
-                trace_row(
-                    &scene,
-                    &camera,
-                    row_index,
-                    &mut row_pixels,
-                    &pixel_samples,
-                    &mut rand,
-                );
-                image.lock().unwrap().write_row(row_index, &row_pixels);
-            }
-        }));
-    }
+                for r in 0..rows_num {
+                    let row_index = row_start_index + r;
+                    trace_row(
+                        scene,
+                        camera,
+                        row_index,
+                        &mut row_pixels,
+                        &pixel_samples,
+                        &mut rand,
+                    );
+                    image.lock().unwrap().write_row(row_index, &row_pixels);
+                }
+            }));
+        }
 
-    for thread in trace_threads.into_iter() {
-        assert!(thread.join().is_ok());
-    }
+        for thread in trace_threads.into_iter() {
+            assert!(thread.join().is_ok());
+        }
+    });
 
     #[cfg(target_os = "windows")]
     let image_path = Path::new("C:\\Projects\\rt-weekends\\render.bmp");
