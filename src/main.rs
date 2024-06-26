@@ -54,6 +54,7 @@ fn trace_row<R: rand::Rng>(
 fn main() {
     const IMAGE_WIDTH: u32 = 1200;
     const IMAGE_HEIGHT: u32 = 800;
+    const PIXEL_SAMPLE_SIZE: usize = 500;
 
     let image = Arc::new(Mutex::new(Image::new(IMAGE_WIDTH, IMAGE_HEIGHT)));
 
@@ -90,7 +91,7 @@ fn main() {
 
         trace_threads.push(thread::spawn(move || {
             let mut rand = SmallRng::seed_from_u64(131);
-            let pixel_samples: [(Fp, Fp); 500] = std::array::from_fn(|_| {
+            let pixel_samples: [(Fp, Fp); PIXEL_SAMPLE_SIZE] = std::array::from_fn(|_| {
                 (
                     rand.gen_range(0.0..1.0 as Fp),
                     rand.gen_range(0.0..1.0 as Fp),
