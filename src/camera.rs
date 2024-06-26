@@ -141,7 +141,7 @@ impl CameraBuilder {
         let pixel_start_pos = viewport_upper_left + 0.5 * (viewport_delta_u + viewport_delta_v);
 
         let defocus_angle = self.defocus_angle / 2.0;
-        let defocus_disk_radius = if self.defocus_angle <= 0.0 {
+        let defocus_disk_radius = if defocus_angle <= 0.0 {
             0.0
         } else {
             self.focus_length * (defocus_angle * PI).tan()
