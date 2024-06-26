@@ -15,8 +15,10 @@ use image::{Image, IMAGE_PIXEL_SIZE};
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use scene::Scene;
 use std::path::Path;
-use std::sync::Mutex;
+use std::sync::{atomic::{self, AtomicU32}, Mutex};
 use std::thread;
+use std::time;
+use std::io::{stdout, Write};
 use types::Fp;
 use vecmath::{Color3F, Color3U8, Vec3F};
 
@@ -74,7 +76,27 @@ fn main() {
     let threads_num = thread::available_parallelism().unwrap().get() as u32;
     let rows_per_thread = IMAGE_HEIGHT / threads_num;
 
+    println!("trace started (threads: {}, rows per thread: {})", threads_num, rows_per_thread);
+
+    let rows_traced = AtomicU32::new(0);
+
     thread::scope(|s| {
+        let rows_traced = &rows_traced;
+
+        let progress_thread = s.spawn(move || {
+            loop {
+                let rows_traced = rows_traced.load(atomic::Ordering::Relaxed);
+                print!("\rtrace ongoing: {:.2}%", (rows_traced as Fp) / (IMAGE_HEIGHT as Fp) * 100.0);
+                stdout().flush().unwrap();
+                if rows_traced == IMAGE_HEIGHT {
+                    break;
+                }
+                thread::sleep(time::Duration::from_millis(200));
+            }
+        });
+
+        let trace_start_ts = time::Instant::now();
+
         let mut trace_threads = Vec::with_capacity(threads_num as usize);
 
         for thread_index in 0..threads_num {
@@ -112,6 +134,7 @@ fn main() {
                         &mut rand,
                     );
                     image.lock().unwrap().write_row(row_index, &row_pixels);
+                    rows_traced.fetch_add(1, atomic::Ordering::SeqCst);
                 }
             }));
         }
@@ -119,6 +142,12 @@ fn main() {
         for thread in trace_threads.into_iter() {
             assert!(thread.join().is_ok());
         }
+
+        let trace_time = trace_start_ts.elapsed();
+
+        assert!(progress_thread.join().is_ok());
+
+        println!("\ntrace completed in {} milliseconds", trace_time.as_millis());
     });
 
     #[cfg(target_os = "windows")]
