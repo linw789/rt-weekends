@@ -243,7 +243,7 @@ impl Scene {
 
         for sphere in self.spheres.iter() {
             let limits = 0.001..Fp::MAX;
-            let intersection = sphere.ray_intercept(ray, &limits);
+            let intersection = sphere.ray_intersect(ray, &limits);
             if intersection.hit && intersection.t < nearest_intersection.t {
                 nearest_intersection = intersection;
                 nearest_material = Some(&sphere.material);

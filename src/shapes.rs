@@ -36,7 +36,7 @@ impl Sphere {
         }
     }
 
-    pub fn ray_intercept(&self, ray: &Ray, limits: &Range<Fp>) -> RayIntersection {
+    pub fn ray_intersect(&self, ray: &Ray, limits: &Range<Fp>) -> RayIntersection {
         let center_to_origin = ray.origin - self.position;
 
         // Calculate sphere quadratic coefficients.
