@@ -1,36 +1,82 @@
 use crate::materials::{Material, MaterialDielectric, MaterialDiffuse, MaterialMetal};
-use crate::shapes::{Ray, RayIntersection, Sphere};
+use crate::shapes::{Aabb, Ray, RayIntersection, Sphere};
 use crate::types::Fp;
 use crate::vecmath::{Color3F, Vec3F};
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use std::vec::Vec;
+use std::ops::Range;
+
+pub struct BvhLeaf {
+    pub aabb: Aabb,
+    pub sphere_index: usize,
+}
+
+pub struct BvhLink {
+    pub aabb: Aabb,
+    pub left: Box<BvhNode>,
+    pub right: Box<BvhNode>,
+}
+
+pub enum BvhNode {
+    Leaf(BvhLeaf),
+    Link(BvhLink),
+}
+
+impl BvhNode {
+    pub fn aabb(&self) -> Aabb {
+        match self {
+            BvhNode::Leaf(leaf) => leaf.aabb,
+            BvhNode::Link(link) => link.aabb,
+        }
+    }
+}
+
+fn build_bvh(spheres: &[Sphere], sphere_start: usize) -> Box<BvhNode> {
+    if spheres.len() == 1 {
+        Box::new(BvhNode::Leaf(BvhLeaf {
+            aabb: Aabb::from_sphere(&spheres[0]),
+            sphere_index: sphere_start,
+        }))
+    } else {
+        let middle = spheres.len() / 2;
+        let left = build_bvh(&spheres[..middle], sphere_start);
+        let right = build_bvh(&spheres[middle..], sphere_start + middle);
+
+        Box::new(BvhNode::Link(BvhLink {
+            aabb: Aabb::merge(&left.aabb(), &right.aabb()),
+            left,
+            right
+        }))
+    }
+}
 
 pub struct Scene {
     spheres: Vec<Sphere>,
+    bvh: Box<BvhNode>,
 }
 
 impl Scene {
     const TRACE_MAX_DEPTH: u32 = 50;
 
     #[allow(dead_code)]
-    pub fn one_sphere() -> Scene {
-        let mut scene = Scene {
-            spheres: Vec::new(),
-        };
+    pub fn one_sphere() -> Self {
+        let mut spheres = Vec::new();
 
-        scene.spheres.push(Sphere::new(
+        spheres.push(Sphere::new(
             Vec3F::new(0.0, 0.0, -1.0),
             0.5,
             Material::Diffuse(MaterialDiffuse::new(Color3F::new(0.7, 0.3, 0.3))),
         ));
 
-        scene
+        Self {
+            bvh: build_bvh(&spheres, 0),
+            spheres,
+        }
     }
 
     #[allow(dead_code)]
     pub fn two_spheres() -> Scene {
-        let scene = Scene {
-            spheres: vec![
+        let spheres = vec![
                 Sphere::new(
                     Vec3F::new(0.0, -100.5, -1.0),
                     100.0,
@@ -41,16 +87,17 @@ impl Scene {
                     0.5,
                     Material::Diffuse(MaterialDiffuse::new(Color3F::new(0.8, 0.6, 0.2))),
                 ),
-            ],
-        };
+        ];
 
-        scene
+        Self {
+            bvh: build_bvh(&spheres, 0),
+            spheres,
+        }
     }
 
     #[allow(dead_code)]
     pub fn three_spheres_metal() -> Scene {
-        let scene = Scene {
-            spheres: vec![
+        let spheres = vec![
                 // ground
                 Sphere::new(
                     Vec3F::new(0.0, -100.5, -1.0),
@@ -75,16 +122,17 @@ impl Scene {
                     0.5,
                     Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.6, 0.2), 1.0)),
                 ),
-            ],
-        };
+        ];
 
-        scene
+        Self {
+            bvh: build_bvh(&spheres, 0),
+            spheres,
+        }
     }
 
     #[allow(dead_code)]
     pub fn three_spheres_dielectric() -> Scene {
-        let scene = Scene {
-            spheres: vec![
+        let spheres = vec![
                 // ground
                 Sphere::new(
                     Vec3F::new(0.0, -100.5, -1.0),
@@ -109,16 +157,17 @@ impl Scene {
                     0.5,
                     Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.6, 0.2), 1.0)),
                 ),
-            ],
-        };
+        ];
 
-        scene
+        Self {
+            bvh: build_bvh(&spheres, 0),
+            spheres,
+        }
     }
 
     #[allow(dead_code)]
     pub fn three_spheres_hollow_glass() -> Scene {
-        let scene = Scene {
-            spheres: vec![
+        let spheres = vec![
                 // ground
                 Sphere::new(
                     Vec3F::new(0.0, -100.5, -1.0),
@@ -149,10 +198,12 @@ impl Scene {
                     0.5,
                     Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.6, 0.2), 1.0)),
                 ),
-            ],
-        };
+        ];
 
-        scene
+        Self {
+            bvh: build_bvh(&spheres, 0),
+            spheres,
+        }
     }
 
     #[allow(dead_code)]
@@ -227,7 +278,10 @@ impl Scene {
             }
         }
 
-        Scene { spheres }
+        Self {
+            bvh: build_bvh(&spheres, 0),
+            spheres,
+        }
     }
 
     pub fn trace<R: rand::Rng>(&self, ray: &Ray, rand: &mut R, depth: u32) -> Color3F {
@@ -266,6 +320,31 @@ impl Scene {
         };
 
         color
+    }
+
+    fn bvh_ray_intersect(&self, ray: &Ray, limits: &Range<Fp>) -> RayIntersection {
+        
+    }
+
+    pub fn trace_bvh<R: rand::Rng>(&self, ray: &Ray, rand: &mut R, depth: u32) -> Color3F {
+        if depth > Self::TRACE_MAX_DEPTH {
+            return Color3F::zero();
+        }
+
+        let mut nearest_intersection = RayIntersection {
+            t: Fp::MAX,
+            ..Default::default()
+        };
+        let mut nearest_material: Option<&Material> = None;
+
+        for sphere in self.spheres.iter() {
+            let limits = 0.001..Fp::MAX;
+            let intersection = sphere.ray_intersect(ray, &limits);
+            if intersection.hit && intersection.t < nearest_intersection.t {
+                nearest_intersection = intersection;
+                nearest_material = Some(&sphere.material);
+            }
+        }
     }
 }
 
