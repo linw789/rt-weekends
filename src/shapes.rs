@@ -6,7 +6,7 @@ use std::ops::Range;
 pub struct Ray {
     pub origin: Vec3F,
     pub direction: Vec3F,
-    pub inv_dir: Vec3F,
+    // pub inv_dir: Vec3F,
 }
 
 impl Ray {
@@ -14,7 +14,7 @@ impl Ray {
         Self {
             origin,
             direction: dir,
-            inv_dir: Vec3F::new(1.0 / dir.x, 1.0 / dir.y, 1.0 / dir.z),
+            // inv_dir: Vec3F::new(1.0 / dir.x, 1.0 / dir.y, 1.0 / dir.z),
         }
     }
 }
@@ -138,7 +138,7 @@ impl Aabb {
         let mut t_min = Fp::NEG_INFINITY;
         let mut t_max = Fp::INFINITY;
 
-        // Intersection exists only if all three segments overlap. I can intuitively understand
+        // Intersection exists only if all three segments overlap. I can intuitively, visually understand
         // this in 2D, but I'm not sure about this in 3D.
 
         t_min = Fp::max(t_min, Fp::min(xt0, xt1));

@@ -86,7 +86,7 @@ fn main() {
         let progress_thread = s.spawn(move || {
             loop {
                 let rows_traced = rows_traced.load(atomic::Ordering::Relaxed);
-                print!("\rtrace ongoing: {:.2}%", (rows_traced as Fp) / (IMAGE_HEIGHT as Fp) * 100.0);
+                print!("\rtrace progress: {:.2}%", (rows_traced as Fp) / (IMAGE_HEIGHT as Fp) * 100.0);
                 stdout().flush().unwrap();
                 if rows_traced == IMAGE_HEIGHT {
                     break;

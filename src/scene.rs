@@ -5,6 +5,7 @@ use crate::vecmath::{Color3F, Vec3F};
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use std::vec::Vec;
 use std::ops::Range;
+use std::rc::Rc;
 
 pub struct BvhLeaf {
     pub aabb: Aabb,
@@ -13,8 +14,8 @@ pub struct BvhLeaf {
 
 pub struct BvhLink {
     pub aabb: Aabb,
-    pub left: Box<BvhNode>,
-    pub right: Box<BvhNode>,
+    pub left: Rc<BvhNode>,
+    pub right: Rc<BvhNode>,
 }
 
 pub enum BvhNode {
@@ -31,9 +32,9 @@ impl BvhNode {
     }
 }
 
-fn build_bvh(spheres: &[Sphere], sphere_start: usize) -> Box<BvhNode> {
+fn build_bvh(spheres: &[Sphere], sphere_start: usize) -> Rc<BvhNode> {
     if spheres.len() == 1 {
-        Box::new(BvhNode::Leaf(BvhLeaf {
+        Rc::new(BvhNode::Leaf(BvhLeaf {
             aabb: Aabb::from_sphere(&spheres[0]),
             sphere_index: sphere_start,
         }))
@@ -42,7 +43,7 @@ fn build_bvh(spheres: &[Sphere], sphere_start: usize) -> Box<BvhNode> {
         let left = build_bvh(&spheres[..middle], sphere_start);
         let right = build_bvh(&spheres[middle..], sphere_start + middle);
 
-        Box::new(BvhNode::Link(BvhLink {
+        Rc::new(BvhNode::Link(BvhLink {
             aabb: Aabb::merge(&left.aabb(), &right.aabb()),
             left,
             right
@@ -50,9 +51,35 @@ fn build_bvh(spheres: &[Sphere], sphere_start: usize) -> Box<BvhNode> {
     }
 }
 
+fn bvh_ray_intersect(bvh_node: Rc<BvhNode>, spheres: &[Sphere], ray: &Ray, limits: &Range<Fp>) -> (RayIntersection, usize) {
+    if bvh_node.aabb().ray_intersect(ray) {
+        match &*bvh_node {
+            BvhNode::Leaf(leaf) => (spheres[leaf.sphere_index].ray_intersect(ray, limits), leaf.sphere_index),
+            BvhNode::Link(link) => {
+                let (left_intersection, left_sphere_index) = bvh_ray_intersect(Rc::clone(&link.left), spheres, ray, limits);
+                let right_limits = limits.start .. if left_intersection.hit { left_intersection.t } else { limits.end };
+                let (right_intersection, right_sphere_index) = bvh_ray_intersect(Rc::clone(&link.right), spheres, ray, &right_limits);
+                if right_intersection.hit { 
+                    (right_intersection, right_sphere_index)
+                } else {
+                    (left_intersection, left_sphere_index)
+                }
+            }
+        }
+    } else {
+        (
+            RayIntersection {
+            hit: false,
+            ..Default::default()
+            },
+            0
+        )
+    }
+}
+
 pub struct Scene {
     spheres: Vec<Sphere>,
-    bvh: Box<BvhNode>,
+    bvh: Rc<BvhNode>,
 }
 
 impl Scene {
@@ -322,29 +349,30 @@ impl Scene {
         color
     }
 
-    fn bvh_ray_intersect(&self, ray: &Ray, limits: &Range<Fp>) -> RayIntersection {
-        
-    }
-
     pub fn trace_bvh<R: rand::Rng>(&self, ray: &Ray, rand: &mut R, depth: u32) -> Color3F {
         if depth > Self::TRACE_MAX_DEPTH {
             return Color3F::zero();
         }
 
-        let mut nearest_intersection = RayIntersection {
-            t: Fp::MAX,
-            ..Default::default()
-        };
-        let mut nearest_material: Option<&Material> = None;
+        let limits = 0.001..Fp::MAX;
+        let (intersection, sphere_index) = bvh_ray_intersect(self.bvh.clone(), &self.spheres, &ray, &limits); 
 
-        for sphere in self.spheres.iter() {
-            let limits = 0.001..Fp::MAX;
-            let intersection = sphere.ray_intersect(ray, &limits);
-            if intersection.hit && intersection.t < nearest_intersection.t {
-                nearest_intersection = intersection;
-                nearest_material = Some(&sphere.material);
+        let color = if intersection.hit {
+            let material = &self.spheres[sphere_index].material;
+            match material.scatter(ray, &intersection, rand) {
+                Some((scattered_ray, albedo)) => {
+                    albedo * self.trace(&scattered_ray, rand, depth + 1)
+                }
+                None => Color3F::zero(),
             }
-        }
+        } else {
+            // simulate the sky color
+            let ray_dir_normalized = ray.direction.normalized();
+            let a = 0.5 * (ray_dir_normalized.y + 1.0);
+            Color3F::new(1.0, 1.0, 1.0) * (1.0 - a) + Color3F::new(0.5, 0.7, 1.0) * a
+        };
+
+        color 
     }
 }
 
