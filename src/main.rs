@@ -43,7 +43,7 @@ fn trace_row<R: rand::Rng>(
 
         for rand_sample in pixel_samples.iter() {
             let ray = camera.gen_ray(col as u32, row_index, rand_sample.0, rand_sample.1, rand);
-            pixel_color += scene.trace(&ray, rand, 0);
+            pixel_color += scene.trace_bvh(&ray, rand, 0);
         }
 
         pixel_color = pixel_color / (pixel_samples.len() as Fp);

@@ -56,10 +56,7 @@ impl Camera {
 
         let ray_origin = self.defocus_disk_sample(rand);
 
-        Ray {
-            origin: ray_origin,
-            direction: (pixel_center + random_sample) - ray_origin,
-        }
+        Ray::new(ray_origin, (pixel_center + random_sample) - ray_origin)
     }
 
     fn defocus_disk_sample<R: rand::Rng>(&self, rand: &mut R) -> Vec3F {

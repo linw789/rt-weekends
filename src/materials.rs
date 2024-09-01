@@ -73,10 +73,7 @@ impl MaterialDiffuse {
         };
 
         Some((
-            Ray {
-                origin: intersection.hit_point,
-                direction: scattered_ray,
-            },
+            Ray::new(intersection.hit_point, scattered_ray),
             self.albedo,
         ))
     }
@@ -118,10 +115,7 @@ impl MaterialMetal {
         // discard it (as if the surface absorbs the `incident_ray`).
         if dot(&scattered_ray, &intersection.normal) > 0.0 {
             Some((
-                Ray {
-                    origin: intersection.hit_point,
-                    direction: scattered_ray,
-                },
+                Ray::new(intersection.hit_point, scattered_ray),
                 self.albedo,
             ))
         } else {
@@ -163,10 +157,7 @@ impl MaterialDielectric {
         };
 
         Some((
-            Ray {
-                origin: intersection.hit_point,
-                direction: out_dir,
-            },
+            Ray::new(intersection.hit_point, out_dir),
             attenuation,
         ))
     }

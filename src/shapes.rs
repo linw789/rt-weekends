@@ -6,15 +6,22 @@ use std::ops::Range;
 pub struct Ray {
     pub origin: Vec3F,
     pub direction: Vec3F,
-    // pub inv_dir: Vec3F,
+    pub inv_dir: Vec3F,
+    pub signs: [u8; 3],
 }
 
 impl Ray {
     pub fn new(origin: Vec3F, dir: Vec3F) -> Self {
+        let inv_dir = Vec3F::new(1.0 / dir.x, 1.0 / dir.y, 1.0 / dir.z); 
         Self {
             origin,
             direction: dir,
-            // inv_dir: Vec3F::new(1.0 / dir.x, 1.0 / dir.y, 1.0 / dir.z),
+            inv_dir, 
+            signs: [
+                if inv_dir.x < 0.0 { 1 } else { 0 },
+                if inv_dir.y < 0.0 { 1 } else { 0 },
+                if inv_dir.z < 0.0 { 1 } else { 0 },
+            ],
         }
     }
 }
@@ -96,60 +103,74 @@ impl Sphere {
 
 #[derive(Copy, Clone)]
 pub struct Aabb {
-    min: Vec3F,
-    max: Vec3F,
+    bounds: [Vec3F; 2], // [min, max]
 }
 
 impl Aabb {
-    pub fn new(min: Vec3F, max: Vec3F) -> Self {
-        Self {
-            min,
-            max,
-        }
-    }
-
     pub fn from_sphere(s: &Sphere) -> Self {
         let extent = Vec3F::new(s.radius, s.radius, s.radius);
         Self {
-            min: s.position - extent,
-            max: s.position + extent,
+            bounds: [s.position - extent, s.position + extent],
         }
     }
 
     pub fn merge(a: &Aabb, b: &Aabb) -> Self {
+        const MIN: usize = 0;
+        const MAX: usize = 1;
+
         Self {
-            min: Vec3F::new(Fp::min(a.min.x, b.min.x), Fp::min(a.min.y, b.min.y), Fp::min(a.min.z, b.min.z)),
-            max: Vec3F::new(Fp::max(a.max.x, b.max.x), Fp::max(a.max.y, b.max.y), Fp::max(a.max.z, b.max.z)),
+            bounds: [
+                Vec3F::new(
+                    Fp::min(a.bounds[MIN].x, b.bounds[MIN].x),
+                    Fp::min(a.bounds[MIN].y, b.bounds[MIN].y),
+                    Fp::min(a.bounds[MIN].z, b.bounds[MIN].z)),
+                Vec3F::new(
+                    Fp::max(a.bounds[MAX].x, b.bounds[MAX].x),
+                    Fp::max(a.bounds[MAX].y, b.bounds[MAX].y),
+                    Fp::max(a.bounds[MAX].z, b.bounds[MAX].z)),
+            ]
         }
     }
 
     pub fn ray_intersect(&self, ray: &Ray) -> bool {
-        // TODO: how do we handle divide-by-zero?
-
-        let yt0 = (self.min.x - ray.origin.y) / ray.direction.y;
-        let yt1 = (self.max.x - ray.origin.y) / ray.direction.y;
-
-        let zt0 = (self.min.y - ray.origin.z) / ray.direction.z;
-        let zt1 = (self.max.y - ray.origin.z) / ray.direction.z;
-
-        let xt0 = (self.min.z - ray.origin.x) / ray.direction.x;
-        let xt1 = (self.max.z - ray.origin.x) / ray.direction.x;
-
-        let mut t_min = Fp::NEG_INFINITY;
-        let mut t_max = Fp::INFINITY;
-
         // Intersection exists only if all three segments overlap. I can intuitively, visually understand
         // this in 2D, but I'm not sure about this in 3D.
+        //
+        // https://people.csail.mit.edu/amy/papers/box-jgt.pdf (An Efficient and Robust Ray-Box Intersection Algorithm)
+        // Note, this paper doesn't address a degenerate case where the origin of the ray lies on
+        // one of the planes of the AABB. This post mentions a way to handle the issue: https://tavianator.com/2015/ray_box_nan.html
 
-        t_min = Fp::max(t_min, Fp::min(xt0, xt1));
-        t_max = Fp::min(t_max, Fp::max(xt0, xt1));
+        debug_assert!((self.bounds[0].x < self.bounds[1].x) && (self.bounds[0].y < self.bounds[1].y) && (self.bounds[0].z < self.bounds[1].z));
 
-        t_min = Fp::max(t_min, Fp::min(yt0, yt1));
-        t_max = Fp::min(t_max, Fp::max(yt0, yt1));
+        const AXIS_X: usize = 0;
+        const AXIS_Y: usize = 1;
+        const AXIS_Z: usize = 2;
 
-        t_min = Fp::max(t_min, Fp::min(zt0, zt1));
-        t_max = Fp::min(t_max, Fp::max(zt0, zt1));
+        let mut tmin = (self.bounds[ray.signs[AXIS_X] as usize].x - ray.origin.x) * ray.inv_dir.x; 
+        let mut tmax = (self.bounds[1 - ray.signs[AXIS_X] as usize].x - ray.origin.x) * ray.inv_dir.x; 
 
-        t_min < t_max
+        let ty_min = (self.bounds[ray.signs[AXIS_Y] as usize].y - ray.origin.y) * ray.inv_dir.y; 
+        let ty_max = (self.bounds[1 - ray.signs[AXIS_Y] as usize].y - ray.origin.y) * ray.inv_dir.y; 
+
+        let tz_min = (self.bounds[ray.signs[AXIS_Z] as usize].z - ray.origin.z) * ray.inv_dir.z; 
+        let tz_max = (self.bounds[1 - ray.signs[AXIS_Z] as usize].z - ray.origin.y) * ray.inv_dir.z; 
+
+        // If either tmin or ty_min is NaN, Fp::max returns the non-NaN value. tmin and ty_min
+        // can't be both NaN, because we assert that AABB can't be degenerate. Specifically,
+        //
+        // if: ray.inv_dir.x == INFINITY and tmin == NaN,
+        // then: tmax == INFINITY must hold
+        // then: Fp::max(tmin, ty_min) -> ty_min, and Fp::min(tmax, ty_max) -> ty_max.
+        //
+        // if: ray.inv_dir.x == INFINITY and tmax == NaN,
+        // then: tmin must == NEG_INFINITY must hold
+        // then: Fp::max(tmin, ty_min) -> ty_min, and Fp::min(tmax, ty_max) -> ty_max.
+        tmin = Fp::max(tmin, ty_min);
+        tmax = Fp::min(tmax, ty_max);
+        
+        tmin = Fp::max(tmin, tz_min);
+        tmax = Fp::min(tmax, tz_max);
+
+        tmin < tmax
     }
 }
