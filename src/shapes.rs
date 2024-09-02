@@ -153,7 +153,7 @@ impl Aabb {
         let ty_max = (self.bounds[1 - ray.signs[AXIS_Y] as usize].y - ray.origin.y) * ray.inv_dir.y; 
 
         let tz_min = (self.bounds[ray.signs[AXIS_Z] as usize].z - ray.origin.z) * ray.inv_dir.z; 
-        let tz_max = (self.bounds[1 - ray.signs[AXIS_Z] as usize].z - ray.origin.y) * ray.inv_dir.z; 
+        let tz_max = (self.bounds[1 - ray.signs[AXIS_Z] as usize].z - ray.origin.z) * ray.inv_dir.z; 
 
         // If either tmin or ty_min is NaN, Fp::max returns the non-NaN value. tmin and ty_min
         // can't be both NaN, because we assert that AABB can't be degenerate. Specifically,

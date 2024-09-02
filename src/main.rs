@@ -65,7 +65,7 @@ fn main() {
     let camera = 
         Camera::builder()
             .pixel_dimension(IMAGE_WIDTH, IMAGE_HEIGHT)
-            .fov(20.0 / 180.0)
+            .fov(30.0 / 180.0)
             .focus_length(10.0)
             .defocus_angle(0.6 / 180.0)
             .position(Vec3F::new(13.0, 2.0, 3.0))
@@ -91,7 +91,6 @@ fn main() {
                 if rows_traced == IMAGE_HEIGHT {
                     break;
                 }
-                thread::sleep(time::Duration::from_millis(200));
             }
         });
 

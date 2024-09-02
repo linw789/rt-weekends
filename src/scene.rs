@@ -5,7 +5,7 @@ use crate::vecmath::{Color3F, Vec3F};
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use std::vec::Vec;
 use std::ops::Range;
-use std::rc::Rc;
+use std::sync::Arc;
 
 pub struct BvhLeaf {
     pub aabb: Aabb,
@@ -14,8 +14,8 @@ pub struct BvhLeaf {
 
 pub struct BvhLink {
     pub aabb: Aabb,
-    pub left: Rc<BvhNode>,
-    pub right: Rc<BvhNode>,
+    pub left: Arc<BvhNode>,
+    pub right: Arc<BvhNode>,
 }
 
 pub enum BvhNode {
@@ -24,17 +24,17 @@ pub enum BvhNode {
 }
 
 impl BvhNode {
-    pub fn aabb(&self) -> Aabb {
+    pub fn aabb(&self) -> &Aabb {
         match self {
-            BvhNode::Leaf(leaf) => leaf.aabb,
-            BvhNode::Link(link) => link.aabb,
+            BvhNode::Leaf(leaf) => &leaf.aabb,
+            BvhNode::Link(link) => &link.aabb,
         }
     }
 }
 
-fn build_bvh(spheres: &[Sphere], sphere_start: usize) -> Rc<BvhNode> {
+fn build_bvh(spheres: &[Sphere], sphere_start: usize) -> Arc<BvhNode> {
     if spheres.len() == 1 {
-        Rc::new(BvhNode::Leaf(BvhLeaf {
+        Arc::new(BvhNode::Leaf(BvhLeaf {
             aabb: Aabb::from_sphere(&spheres[0]),
             sphere_index: sphere_start,
         }))
@@ -43,7 +43,7 @@ fn build_bvh(spheres: &[Sphere], sphere_start: usize) -> Rc<BvhNode> {
         let left = build_bvh(&spheres[..middle], sphere_start);
         let right = build_bvh(&spheres[middle..], sphere_start + middle);
 
-        Rc::new(BvhNode::Link(BvhLink {
+        Arc::new(BvhNode::Link(BvhLink {
             aabb: Aabb::merge(&left.aabb(), &right.aabb()),
             left,
             right
@@ -51,14 +51,14 @@ fn build_bvh(spheres: &[Sphere], sphere_start: usize) -> Rc<BvhNode> {
     }
 }
 
-fn bvh_ray_intersect(bvh_node: Rc<BvhNode>, spheres: &[Sphere], ray: &Ray, limits: &Range<Fp>) -> (RayIntersection, usize) {
+fn bvh_ray_intersect(bvh_node: Arc<BvhNode>, spheres: &[Sphere], ray: &Ray, limits: &Range<Fp>) -> (RayIntersection, usize) {
     if bvh_node.aabb().ray_intersect(ray) {
         match &*bvh_node {
             BvhNode::Leaf(leaf) => (spheres[leaf.sphere_index].ray_intersect(ray, limits), leaf.sphere_index),
             BvhNode::Link(link) => {
-                let (left_intersection, left_sphere_index) = bvh_ray_intersect(Rc::clone(&link.left), spheres, ray, limits);
+                let (left_intersection, left_sphere_index) = bvh_ray_intersect(Arc::clone(&link.left), spheres, ray, limits);
                 let right_limits = limits.start .. if left_intersection.hit { left_intersection.t } else { limits.end };
-                let (right_intersection, right_sphere_index) = bvh_ray_intersect(Rc::clone(&link.right), spheres, ray, &right_limits);
+                let (right_intersection, right_sphere_index) = bvh_ray_intersect(Arc::clone(&link.right), spheres, ray, &right_limits);
                 if right_intersection.hit { 
                     (right_intersection, right_sphere_index)
                 } else {
@@ -69,8 +69,8 @@ fn bvh_ray_intersect(bvh_node: Rc<BvhNode>, spheres: &[Sphere], ray: &Ray, limit
     } else {
         (
             RayIntersection {
-            hit: false,
-            ..Default::default()
+                hit: false,
+                ..Default::default()
             },
             0
         )
@@ -79,7 +79,7 @@ fn bvh_ray_intersect(bvh_node: Rc<BvhNode>, spheres: &[Sphere], ray: &Ray, limit
 
 pub struct Scene {
     spheres: Vec<Sphere>,
-    bvh: Rc<BvhNode>,
+    bvh: Arc<BvhNode>,
 }
 
 impl Scene {
@@ -355,13 +355,13 @@ impl Scene {
         }
 
         let limits = 0.001..Fp::MAX;
-        let (intersection, sphere_index) = bvh_ray_intersect(self.bvh.clone(), &self.spheres, &ray, &limits); 
+        let (intersection, sphere_index) = bvh_ray_intersect(Arc::clone(&self.bvh), &self.spheres, &ray, &limits); 
 
         let color = if intersection.hit {
             let material = &self.spheres[sphere_index].material;
             match material.scatter(ray, &intersection, rand) {
                 Some((scattered_ray, albedo)) => {
-                    albedo * self.trace(&scattered_ray, rand, depth + 1)
+                    albedo * self.trace_bvh(&scattered_ray, rand, depth + 1)
                 }
                 None => Color3F::zero(),
             }
