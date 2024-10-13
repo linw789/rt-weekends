@@ -7,6 +7,7 @@ mod image;
 mod materials;
 mod scene;
 mod shapes;
+mod textures;
 mod types;
 mod vecmath;
 
@@ -43,7 +44,7 @@ fn trace_row<R: rand::Rng>(
 
         for rand_sample in pixel_samples.iter() {
             let ray = camera.gen_ray(col as u32, row_index, rand_sample.0, rand_sample.1, rand);
-            pixel_color += scene.trace_bvh(&ray, rand, 0);
+            pixel_color += scene.trace(&ray, rand, 0);
         }
 
         pixel_color = pixel_color / (pixel_samples.len() as Fp);
@@ -60,7 +61,7 @@ fn main() {
 
     let image = Mutex::new(Image::new(IMAGE_WIDTH, IMAGE_HEIGHT));
 
-    let scene = Scene::many_spheres();
+    let scene = Scene::three_spheres_metal();
 
     let camera = 
         Camera::builder()

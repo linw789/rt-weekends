@@ -92,7 +92,7 @@ impl Scene {
         spheres.push(Sphere::new(
             Vec3F::new(0.0, 0.0, -1.0),
             0.5,
-            Material::Diffuse(MaterialDiffuse::new(Color3F::new(0.7, 0.3, 0.3))),
+            Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.7, 0.3, 0.3))),
         ));
 
         Self {
@@ -107,12 +107,12 @@ impl Scene {
                 Sphere::new(
                     Vec3F::new(0.0, -100.5, -1.0),
                     100.0,
-                    Material::Diffuse(MaterialDiffuse::new(Color3F::new(0.7, 0.3, 0.3))),
+                    Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.7, 0.3, 0.3))),
                 ),
                 Sphere::new(
                     Vec3F::new(0.0, 0.0, -1.0),
                     0.5,
-                    Material::Diffuse(MaterialDiffuse::new(Color3F::new(0.8, 0.6, 0.2))),
+                    Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.8, 0.6, 0.2))),
                 ),
         ];
 
@@ -129,13 +129,14 @@ impl Scene {
                 Sphere::new(
                     Vec3F::new(0.0, -100.5, -1.0),
                     100.0,
-                    Material::Diffuse(MaterialDiffuse::new(Color3F::new(0.8, 0.8, 0.0))),
+                    Material::Diffuse(MaterialDiffuse::new_checker(
+                        Color3F::new(0.2, 0.3, 0.1), Color3F::new(0.9, 0.9, 0.9), 0.32)),
                 ),
                 // center
                 Sphere::new(
                     Vec3F::new(0.0, 0.0, -1.2),
                     0.5,
-                    Material::Diffuse(MaterialDiffuse::new(Color3F::new(0.1, 0.2, 0.5))),
+                    Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.1, 0.2, 0.5))),
                 ),
                 // left
                 Sphere::new(
@@ -164,13 +165,13 @@ impl Scene {
                 Sphere::new(
                     Vec3F::new(0.0, -100.5, -1.0),
                     100.0,
-                    Material::Diffuse(MaterialDiffuse::new(Color3F::new(0.8, 0.8, 0.0))),
+                    Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.8, 0.8, 0.0))),
                 ),
                 // center
                 Sphere::new(
                     Vec3F::new(0.0, 0.0, -1.2),
                     0.5,
-                    Material::Diffuse(MaterialDiffuse::new(Color3F::new(0.1, 0.2, 0.5))),
+                    Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.1, 0.2, 0.5))),
                 ),
                 // left
                 Sphere::new(
@@ -199,13 +200,13 @@ impl Scene {
                 Sphere::new(
                     Vec3F::new(0.0, -100.5, -1.0),
                     100.0,
-                    Material::Diffuse(MaterialDiffuse::new(Color3F::new(0.8, 0.8, 0.0))),
+                    Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.8, 0.8, 0.0))),
                 ),
                 // center
                 Sphere::new(
                     Vec3F::new(0.0, 0.0, -1.2),
                     0.5,
-                    Material::Diffuse(MaterialDiffuse::new(Color3F::new(0.1, 0.2, 0.5))),
+                    Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.1, 0.2, 0.5))),
                 ),
                 // left
                 Sphere::new(
@@ -240,7 +241,7 @@ impl Scene {
             Sphere::new(
                 Vec3F::new(0.0, -1000.0, 0.0),
                 1000.0,
-                Material::Diffuse(MaterialDiffuse::new(Color3F::new(0.5, 0.5, 0.5))),
+                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.5, 0.5, 0.5))),
             ),
             Sphere::new(
                 Vec3F::new(0.0, 1.0, 0.0),
@@ -250,7 +251,7 @@ impl Scene {
             Sphere::new(
                 Vec3F::new(-4.0, 1.0, 0.0),
                 1.0,
-                Material::Diffuse(MaterialDiffuse::new(Color3F::new(0.4, 0.2, 0.1))),
+                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.4, 0.2, 0.1))),
             ),
             Sphere::new(
                 Vec3F::new(4.0, 1.0, 0.0),
@@ -280,7 +281,7 @@ impl Scene {
                         spheres.push(Sphere::new(
                             pos,
                             0.2,
-                            Material::Diffuse(MaterialDiffuse::new(albedo)),
+                            Material::Diffuse(MaterialDiffuse::new_solid_color(albedo)),
                         ));
                     } else if choose_material < 0.9 {
                         let albedo = Color3F::new(

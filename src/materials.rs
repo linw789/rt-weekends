@@ -1,9 +1,10 @@
 use crate::shapes::{Ray, RayIntersection};
 use crate::types::Fp;
 use crate::vecmath::{dot, Color3F, Vec3F};
+use crate::textures::{Texture, TextureSolidColor, TextureChecker};
 
 pub struct MaterialDiffuse {
-    albedo: Color3F,
+    tex: Texture,
 }
 
 pub struct MaterialMetal {
@@ -36,8 +37,16 @@ fn refract(in_dir: &Vec3F, normal: &Vec3F, refrac_index: Fp) -> Vec3F {
 }
 
 impl MaterialDiffuse {
-    pub fn new(albedo: Color3F) -> Self {
-        Self { albedo }
+    pub fn new_solid_color(albedo: Color3F) -> Self {
+        Self { 
+            tex: Texture::Solid(TextureSolidColor::new(albedo))
+        }
+    }
+
+    pub fn new_checker(even: Color3F, odd: Color3F, scale: Fp) -> Self {
+        Self {
+            tex: Texture::Checker(TextureChecker::new(even, odd, scale))
+        }
     }
 
     pub fn scatter<R: rand::Rng>(
@@ -74,7 +83,7 @@ impl MaterialDiffuse {
 
         Some((
             Ray::new(intersection.hit_point, scattered_ray),
-            self.albedo,
+            self.tex.value(intersection.u, intersection.v, intersection.hit_point),
         ))
     }
 }

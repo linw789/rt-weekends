@@ -37,6 +37,9 @@ pub struct RayIntersection {
 
     pub hit_point: Vec3F,
     pub normal: Vec3F,
+
+    pub u: Fp,
+    pub v: Fp,
 }
 
 pub struct Sphere {
@@ -97,6 +100,8 @@ impl Sphere {
             hit_point,
             is_normal_outward,
             normal,
+            u: 0.0,
+            v: 0.0,
         }
     }
 }
