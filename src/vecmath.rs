@@ -68,7 +68,8 @@ impl Vec3<Fp> {
 impl<T: Copy> Into<[T; 3]> for Vec3<T> {
     fn into(self) -> [T; 3] {
         unsafe {
-            // Soundness: because Vec3<T> is packed, its memory layout should be the same as [T; 3].
+            // Soundness: because Vec3<T> is packed, its memory layout should be the same
+            // as [T; 3].
             *transmute::<&Self, &[T; 3]>(&self)
         }
     }

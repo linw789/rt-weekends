@@ -2,8 +2,9 @@ use crate::vecmath::Color3U8;
 use libc::{c_char, c_int, c_void};
 use std::ffi::CString;
 use std::path::Path;
+use std::mem;
 
-#[link(name = "stb_image_write")]
+#[link(name = "stb_image")]
 extern "C" {
     fn stbi_write_bmp(
         filename: *const c_char,
@@ -14,9 +15,26 @@ extern "C" {
     ) -> c_int;
 }
 
+#[link(name = "stb_image")]
+extern "C" {
+    fn stbi_load(
+        filename: *const c_char,
+        w: *const c_int,
+        h: *const c_int,
+        comp_n: *const c_int,
+        desire_comp_n: c_int,
+    ) -> *const c_char;
+}
+
+#[link(name = "stb_image")]
+extern "C" {
+    fn stbi_image_free(data: *mut c_void);
+}
+
 pub const IMAGE_PIXEL_SIZE: usize = 3;
 
 pub struct Image {
+    from_file: bool,
     pub width: u32,
     pub height: u32,
     pub pixels: Vec<[u8; IMAGE_PIXEL_SIZE]>,
@@ -24,10 +42,49 @@ pub struct Image {
 
 impl Image {
     pub fn new(width: u32, height: u32) -> Image {
+        let size = (width * height) as usize;
         Image {
+            from_file: false,
             width,
             height,
-            pixels: vec![[0, 0, 0]; (width * height) as usize],
+            pixels: if size == 0 {
+                // No allocation if size is 0. This is important to avoid memory leak in 
+                // Image's drop() impl.
+                Vec::new()
+            } else {
+                vec![[0, 0, 0]; size]
+            },
+        }
+    }
+
+    pub fn from_file<P: AsRef<Path>>(file_path: P) -> Image {
+        let src_file_path_cstr = CString::new(file_path.as_ref().to_str().unwrap()).unwrap();
+        let mut image_width = 0;
+        let mut image_height = 0;
+        let mut image_components = 0;
+
+        let image_data = unsafe {
+            stbi_load(
+                src_file_path_cstr.into_raw(),
+                &mut image_width,
+                &mut image_height,
+                &mut image_components,
+                0)
+        };
+        assert!(image_data != std::ptr::null());
+        assert!(image_components != IMAGE_PIXEL_SIZE as c_int);
+
+        Image {
+            from_file: true,
+            width: image_width as u32,
+            height: image_height as u32,
+            pixels: unsafe {
+                let pixel_size: usize = (image_width * image_height).try_into().unwrap();
+                Vec::from_raw_parts(
+                    mem::transmute::<*const c_char, *mut [u8; IMAGE_PIXEL_SIZE]>(image_data),
+                    pixel_size,
+                    pixel_size)
+            },
         }
     }
 
@@ -49,9 +106,7 @@ impl Image {
     }
 
     pub fn write_bmp(&self, filename: &Path) -> Result<(), ()> {
-        let filename = filename.to_str().unwrap();
-        let filename = CString::new(filename).unwrap();
-
+        let filename = CString::new(filename.to_str().unwrap()).unwrap();
         let result = unsafe {
             stbi_write_bmp(
                 filename.into_raw(),
@@ -66,6 +121,19 @@ impl Image {
             Result::Ok(())
         } else {
             Result::Err(())
+        }
+    }
+}
+
+impl Drop for Image {
+    fn drop(&mut self) {
+        if self.from_file {
+            unsafe {
+                stbi_image_free(self.pixels.as_ptr() as *mut c_void);
+            }
+        } else {
+            let to_drop = mem::replace(self, Image::new(0, 0));
+            mem::drop(to_drop);
         }
     }
 }
