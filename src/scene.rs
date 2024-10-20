@@ -6,6 +6,7 @@ use rand::{rngs::SmallRng, Rng, SeedableRng};
 use std::vec::Vec;
 use std::ops::Range;
 use std::sync::Arc;
+use std::path::Path;
 
 pub struct BvhLeaf {
     pub aabb: Aabb,
@@ -104,21 +105,44 @@ impl Scene {
     #[allow(dead_code)]
     pub fn two_spheres() -> Scene {
         let spheres = vec![
-                Sphere::new(
-                    Vec3F::new(0.0, -100.5, -1.0),
-                    100.0,
-                    Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.7, 0.3, 0.3))),
-                ),
-                Sphere::new(
-                    Vec3F::new(0.0, 0.0, -1.0),
-                    0.5,
-                    Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.8, 0.6, 0.2))),
-                ),
+            Sphere::new(
+                Vec3F::new(0.0, -100.5, -1.0),
+                100.0,
+                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.7, 0.3, 0.3))),
+            ),
+            Sphere::new(
+                Vec3F::new(0.0, 0.0, -1.0),
+                0.5,
+                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.8, 0.6, 0.2))),
+            ),
         ];
 
         Self {
             bvh: build_bvh(&spheres, 0),
             spheres,
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn two_globes() -> Scene {
+        let globes = vec![
+            Sphere::new(
+                Vec3F::new(0.0, -100.5, -1.0),
+                100.0,
+                Material::Diffuse(MaterialDiffuse::from_image(
+                    Path::new("/home/linw/Projects/rt-weekends/images/earthmap.jpg"))),
+            ),
+            Sphere::new(
+                Vec3F::new(0.0, 0.0, -1.0),
+                0.5,
+                Material::Diffuse(MaterialDiffuse::from_image(
+                    Path::new("/home/linw/Projects/rt-weekends/images/earthmap.jpg"))),
+            ),
+        ];
+
+        Self {
+            bvh: build_bvh(&globes, 0),
+            spheres: globes,
         }
     }
 

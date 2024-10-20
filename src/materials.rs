@@ -1,7 +1,8 @@
 use crate::shapes::{Ray, RayIntersection};
 use crate::types::Fp;
 use crate::vecmath::{dot, Color3F, Vec3F};
-use crate::textures::{Texture, TextureSolidColor, TextureChecker};
+use crate::textures::{Texture, TextureSolidColor, TextureChecker, TextureImage};
+use std::path::Path;
 
 pub struct MaterialDiffuse {
     tex: Texture,
@@ -46,6 +47,12 @@ impl MaterialDiffuse {
     pub fn new_checker(even: Color3F, odd: Color3F, scale: Fp) -> Self {
         Self {
             tex: Texture::Checker(TextureChecker::new(even, odd, scale))
+        }
+    }
+
+    pub fn from_image<P: AsRef<Path>>(image_path: P) -> Self {
+        Self {
+            tex: Texture::Image(TextureImage::from_file(image_path))
         }
     }
 

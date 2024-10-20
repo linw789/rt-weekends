@@ -1,4 +1,5 @@
-use crate::vecmath::Color3U8;
+use crate::types::Fp;
+use crate::vecmath::{Color3U8, Color3F};
 use libc::{c_char, c_int, c_void};
 use std::ffi::CString;
 use std::path::Path;
@@ -86,6 +87,14 @@ impl Image {
                     pixel_size)
             },
         }
+    }
+
+    pub fn pixel_at_uv(&self, u: Fp, v: Fp) -> Color3F {
+        let w = (u * self.width as Fp) as usize;
+        let h = (v * self.height as Fp) as usize;
+        let index = h * self.width as usize + w;
+        let pixel: Color3U8 = self.pixels[index].into();
+        pixel.into()
     }
 
     #[allow(dead_code)]

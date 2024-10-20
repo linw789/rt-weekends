@@ -75,6 +75,23 @@ impl<T: Copy> Into<[T; 3]> for Vec3<T> {
     }
 }
 
+impl<T: Copy> From<[T; 3]> for Vec3<T> {
+    fn from(a: [T; 3]) -> Self {
+        unsafe {
+            // Soundness: because Vec3<T> is packed, its memory layout should be the same
+            // as [T; 3].
+            *transmute::<&[T; 3], &Self>(&a)
+        }
+    }
+}
+
+impl From<Color3U8> for Color3F {
+    fn from(v: Color3U8) -> Self {
+        let scale = 1.0 / 255.0;
+        Color3F::new((v.x as Fp) * scale, (v.y as Fp) * scale, (v.z as Fp) * scale,)
+    }
+}
+
 impl From<Vec3F> for Color3U8 {
     fn from(v: Vec3F) -> Self {
         Color3U8::new(

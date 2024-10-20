@@ -1,5 +1,7 @@
 use crate::types::Fp;
 use crate::vecmath::{Color3F, Vec3F};
+use crate::Image;
+use std::path::Path;
 
 pub struct TextureSolidColor {
     color: Color3F,
@@ -11,9 +13,14 @@ pub struct TextureChecker {
     inv_scale: Fp,
 }
 
+pub struct TextureImage {
+    image: Image,
+}
+
 pub enum Texture {
     Solid(TextureSolidColor),
     Checker(TextureChecker),
+    Image(TextureImage),
 }
 
 impl TextureSolidColor {
@@ -47,11 +54,32 @@ impl TextureChecker {
     }
 }
 
+impl TextureImage {
+    pub fn from_file<P: AsRef<Path>>(file_path: P) -> Self {
+        Self {
+            image: Image::from_file(file_path),
+        }
+    }
+
+    pub fn value(&self, u: Fp, v: Fp) -> Color3F {
+        if self.image.width == 0 || self.image.height == 0 {
+            // Return solid cyan as debugging aid.
+            return Color3F::new(0.0, 1.0, 1.0);
+        }
+
+        let u = u.clamp(0.0, 1.0);
+        let v = 1.0 - v.clamp(0.0, 1.0); // Flip to image coordinate.
+
+        self.image.pixel_at_uv(u, v)
+    }
+}
+
 impl Texture {
-    pub fn value(&self, _u: Fp, _v: Fp, pos: Vec3F) -> Color3F {
+    pub fn value(&self, u: Fp, v: Fp, pos: Vec3F) -> Color3F {
         match self {
             Texture::Solid(tex) => tex.value(),
             Texture::Checker(tex) => tex.value(pos),
+            Texture::Image(tex) => tex.value(u, v),
         }
     }
 }
