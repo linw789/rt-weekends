@@ -84,7 +84,7 @@ pub struct Scene {
 }
 
 impl Scene {
-    const TRACE_MAX_DEPTH: u32 = 50;
+    const TRACE_MAX_DEPTH: u32 = 5;
 
     #[allow(dead_code)]
     pub fn one_sphere() -> Self {
@@ -129,14 +129,16 @@ impl Scene {
             Sphere::new(
                 Vec3F::new(0.0, -100.5, -1.0),
                 100.0,
+                // Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.7, 0.3, 0.3))),
                 Material::Diffuse(MaterialDiffuse::from_image(
-                    Path::new("/home/linw/Projects/rt-weekends/images/earthmap.jpg"))),
+                    Path::new("C:\\Projects\\rt-weekends\\images\\checker-test.ppm"))),
             ),
             Sphere::new(
-                Vec3F::new(0.0, 0.0, -1.0),
-                0.5,
+                Vec3F::new(0.0, 100.5, -1.0),
+                100.0,
+                // Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.7, 0.3, 0.3))),
                 Material::Diffuse(MaterialDiffuse::from_image(
-                    Path::new("/home/linw/Projects/rt-weekends/images/earthmap.jpg"))),
+                    Path::new("C:\\Projects\\rt-weekends\\images\\checker-test.ppm"))),
             ),
         ];
 

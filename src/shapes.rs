@@ -3,27 +3,16 @@ use crate::types::Fp;
 use crate::vecmath::{dot, Vec3F};
 use std::ops::Range;
 
+#[cfg(not(feature = "use-64bit-float"))]
+use std::f32::consts::PI;
+#[cfg(feature = "use-64bit-float")]
+use std::f64::consts::PI;
+
 pub struct Ray {
     pub origin: Vec3F,
     pub direction: Vec3F,
     pub inv_dir: Vec3F,
     pub signs: [u8; 3],
-}
-
-impl Ray {
-    pub fn new(origin: Vec3F, dir: Vec3F) -> Self {
-        let inv_dir = Vec3F::new(1.0 / dir.x, 1.0 / dir.y, 1.0 / dir.z); 
-        Self {
-            origin,
-            direction: dir,
-            inv_dir, 
-            signs: [
-                if inv_dir.x < 0.0 { 1 } else { 0 },
-                if inv_dir.y < 0.0 { 1 } else { 0 },
-                if inv_dir.z < 0.0 { 1 } else { 0 },
-            ],
-        }
-    }
 }
 
 #[derive(Copy, Clone, Default)]
@@ -46,6 +35,27 @@ pub struct Sphere {
     pub position: Vec3F,
     pub radius: Fp,
     pub material: Material,
+}
+
+#[derive(Copy, Clone)]
+pub struct Aabb {
+    bounds: [Vec3F; 2], // [min, max]
+}
+
+impl Ray {
+    pub fn new(origin: Vec3F, dir: Vec3F) -> Self {
+        let inv_dir = Vec3F::new(1.0 / dir.x, 1.0 / dir.y, 1.0 / dir.z); 
+        Self {
+            origin,
+            direction: dir,
+            inv_dir, 
+            signs: [
+                if inv_dir.x < 0.0 { 1 } else { 0 },
+                if inv_dir.y < 0.0 { 1 } else { 0 },
+                if inv_dir.z < 0.0 { 1 } else { 0 },
+            ],
+        }
+    }
 }
 
 impl Sphere {
@@ -94,21 +104,29 @@ impl Sphere {
             (normal, true)
         };
 
+        let (u, v) = self.get_sphere_uv(&normal);
+
         RayIntersection {
             hit,
             t,
             hit_point,
             is_normal_outward,
             normal,
-            u: 0.0,
-            v: 0.0,
+            u,
+            v,
         }
     }
-}
 
-#[derive(Copy, Clone)]
-pub struct Aabb {
-    bounds: [Vec3F; 2], // [min, max]
+    fn get_sphere_uv(&self, unit_sphere_p: &Vec3F) -> (Fp, Fp) {
+        // Imagine a cylinder whose radius is this sphere's radiu and whose height is 2 * radius.
+        // The goal is to map a point's latitude (from -Y to +Y) and longitude (from -X to +X and
+        // back to -X) on the sphere to the Y and X axis on the unfolded cylinder. 3Blue1Brown has a
+        // good video explaining this: https://www.youtube.com/watch?v=GNcFjFmqEc8
+
+        let theta = -unit_sphere_p.y.acos(); // latitude
+        let phi = (-unit_sphere_p.z).atan2(unit_sphere_p.x) * PI; // longitude
+        (phi / (2.0 * PI), theta / PI)
+    }
 }
 
 impl Aabb {
@@ -143,9 +161,12 @@ impl Aabb {
         //
         // https://people.csail.mit.edu/amy/papers/box-jgt.pdf (An Efficient and Robust Ray-Box Intersection Algorithm)
         // Note, this paper doesn't address a degenerate case where the origin of the ray lies on
-        // one of the planes of the AABB. This post mentions a way to handle the issue: https://tavianator.com/2015/ray_box_nan.html
+        // one of the planes of the AABB. This post mentions a way to handle the issue:
+        // https://tavianator.com/2015/ray_box_nan.html
 
-        debug_assert!((self.bounds[0].x < self.bounds[1].x) && (self.bounds[0].y < self.bounds[1].y) && (self.bounds[0].z < self.bounds[1].z));
+        debug_assert!((self.bounds[0].x < self.bounds[1].x) &&
+                      (self.bounds[0].y < self.bounds[1].y) &&
+                      (self.bounds[0].z < self.bounds[1].z));
 
         const AXIS_X: usize = 0;
         const AXIS_Y: usize = 1;

@@ -57,11 +57,11 @@ fn trace_row<R: rand::Rng>(
 fn main() {
     const IMAGE_WIDTH: u32 = 1200;
     const IMAGE_HEIGHT: u32 = 800;
-    const PIXEL_SAMPLE_SIZE: usize = 500;
+    const PIXEL_SAMPLE_SIZE: usize = 50;
 
     let image = Mutex::new(Image::new(IMAGE_WIDTH, IMAGE_HEIGHT));
 
-    let scene = Scene::three_spheres_metal();
+    let scene = Scene::two_globes();
 
     let camera = 
         Camera::builder()
@@ -69,7 +69,7 @@ fn main() {
             .fov(30.0 / 180.0)
             .focus_length(10.0)
             .defocus_angle(0.6 / 180.0)
-            .position(Vec3F::new(13.0, 2.0, 3.0))
+            .position(Vec3F::new(13.0, 2.0, 700.0))
             .lookat(Vec3F::zero())
             .up(Vec3F::new(0.0, 1.0, 0.0))
             .build();

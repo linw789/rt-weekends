@@ -48,13 +48,7 @@ impl Image {
             from_file: false,
             width,
             height,
-            pixels: if size == 0 {
-                // No allocation if size is 0. This is important to avoid memory leak in 
-                // Image's drop() impl.
-                Vec::new()
-            } else {
-                vec![[0, 0, 0]; size]
-            },
+            pixels: vec![[0, 0, 0]; size],
         }
     }
 
@@ -73,7 +67,7 @@ impl Image {
                 0)
         };
         assert!(image_data != std::ptr::null());
-        assert!(image_components != IMAGE_PIXEL_SIZE as c_int);
+        assert!(image_components == IMAGE_PIXEL_SIZE as c_int);
 
         Image {
             from_file: true,
@@ -90,10 +84,10 @@ impl Image {
     }
 
     pub fn pixel_at_uv(&self, u: Fp, v: Fp) -> Color3F {
-        let w = (u * self.width as Fp) as usize;
-        let h = (v * self.height as Fp) as usize;
-        let index = h * self.width as usize + w;
-        let pixel: Color3U8 = self.pixels[index].into();
+        let w = (u * (self.width - 1) as Fp) as u32;
+        let h = (v * (self.height - 1) as Fp) as u32;
+        let index = h * self.width + w;
+        let pixel: Color3U8 = self.pixels[index as usize].into();
         pixel.into()
     }
 
@@ -141,7 +135,7 @@ impl Drop for Image {
                 stbi_image_free(self.pixels.as_ptr() as *mut c_void);
             }
         } else {
-            let to_drop = mem::replace(self, Image::new(0, 0));
+            let to_drop = mem::replace(&mut self.pixels, Vec::new());
             mem::drop(to_drop);
         }
     }
