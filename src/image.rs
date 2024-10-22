@@ -139,9 +139,6 @@ impl Drop for Image {
                 stbi_image_free(image_data.as_ptr() as *mut c_void);
             }
 
-        } else {
-            let to_drop = mem::replace(&mut self.pixels, Vec::new());
-            mem::drop(to_drop);
         }
     }
 }
