@@ -3,9 +3,9 @@ use crate::types::Fp;
 use crate::vecmath::{dot, Vec3F};
 use std::ops::Range;
 
-#[cfg(not(feature = "use-64bit-float"))]
+#[cfg(not(feature = "use-f64"))]
 use std::f32::consts::PI;
-#[cfg(feature = "use-64bit-float")]
+#[cfg(feature = "use-f64")]
 use std::f64::consts::PI;
 
 pub struct Ray {

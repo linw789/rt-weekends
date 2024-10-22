@@ -1,4 +1,4 @@
-#[cfg(feature = "use-64bit-float")]
+#[cfg(feature = "use-f64")]
 pub type Fp = f64;
-#[cfg(not(feature = "use-64bit-float"))]
+#[cfg(not(feature = "use-f64"))]
 pub type Fp = f32;
