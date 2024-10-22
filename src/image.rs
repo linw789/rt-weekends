@@ -76,7 +76,7 @@ impl Image {
             pixels: unsafe {
                 let pixel_size: usize = (image_width * image_height).try_into().unwrap();
                 Vec::from_raw_parts(
-                    mem::transmute::<*const c_char, *mut [u8; IMAGE_PIXEL_SIZE]>(image_data),
+                    image_data as *mut [u8; IMAGE_PIXEL_SIZE],
                     pixel_size,
                     pixel_size)
             },
@@ -84,8 +84,10 @@ impl Image {
     }
 
     pub fn pixel_at_uv(&self, u: Fp, v: Fp) -> Color3F {
-        let w = (u * (self.width - 1) as Fp) as u32;
-        let h = (v * (self.height - 1) as Fp) as u32;
+        let w = (u * self.width as Fp) as u32;
+        let w = if w >= self.width { self.width - 1 } else { w };
+        let h = (v * self.height as Fp) as u32;
+        let h = if h >= self.height { self.height - 1 } else { h };
         let index = h * self.width + w;
         let pixel: Color3U8 = self.pixels[index as usize].into();
         pixel.into()
@@ -131,9 +133,12 @@ impl Image {
 impl Drop for Image {
     fn drop(&mut self) {
         if self.from_file {
+            let to_drop = mem::replace(&mut self.pixels, Vec::new());
+            let image_data = to_drop.leak();
             unsafe {
-                stbi_image_free(self.pixels.as_ptr() as *mut c_void);
+                stbi_image_free(image_data.as_ptr() as *mut c_void);
             }
+
         } else {
             let to_drop = mem::replace(&mut self.pixels, Vec::new());
             mem::drop(to_drop);
