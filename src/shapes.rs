@@ -117,14 +117,15 @@ impl Sphere {
         }
     }
 
+    // `unit_sphere_p` is the 3D position of a point on a unit sphere.
     fn get_sphere_uv(&self, unit_sphere_p: &Vec3F) -> (Fp, Fp) {
         // Imagine a cylinder whose radius is this sphere's radiu and whose height is 2 * radius.
         // The goal is to map a point's latitude (from -Y to +Y) and longitude (from -X to +X and
         // back to -X) on the sphere to the Y and X axis on the unfolded cylinder. 3Blue1Brown has a
         // good video explaining this: https://www.youtube.com/watch?v=GNcFjFmqEc8
 
-        let theta = -unit_sphere_p.y.acos(); // latitude
-        let phi = (-unit_sphere_p.z).atan2(unit_sphere_p.x) * PI; // longitude
+        let phi = (-unit_sphere_p.z).atan2(unit_sphere_p.x) + PI; // longitude
+        let theta = (-unit_sphere_p.y).acos(); // latitude
         (phi / (2.0 * PI), theta / PI)
     }
 }

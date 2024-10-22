@@ -129,16 +129,14 @@ impl Scene {
             Sphere::new(
                 Vec3F::new(0.0, -100.5, -1.0),
                 100.0,
-                // Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.7, 0.3, 0.3))),
                 Material::Diffuse(MaterialDiffuse::from_image(
-                    Path::new("C:\\Projects\\rt-weekends\\images\\checker-test.ppm"))),
+                    Path::new("images/earthmap.jpg"))),
             ),
             Sphere::new(
                 Vec3F::new(0.0, 100.5, -1.0),
                 100.0,
-                // Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.7, 0.3, 0.3))),
                 Material::Diffuse(MaterialDiffuse::from_image(
-                    Path::new("C:\\Projects\\rt-weekends\\images\\checker-test.ppm"))),
+                    Path::new("images/earthmap.jpg"))),
             ),
         ];
 
