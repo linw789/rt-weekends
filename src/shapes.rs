@@ -1,6 +1,6 @@
 use crate::materials::Material;
 use crate::types::Fp;
-use crate::vecmath::{dot, Vec3F};
+use crate::vecmath::{cross, dot, Vec3F};
 use std::ops::Range;
 
 #[cfg(not(feature = "use-f64"))]
@@ -25,6 +25,7 @@ pub struct RayIntersection {
     pub is_normal_outward: bool,
 
     pub hit_point: Vec3F,
+    /// normal always points the opposite direction as the ray.
     pub normal: Vec3F,
 
     pub u: Fp,
@@ -35,6 +36,13 @@ pub struct Sphere {
     pub position: Vec3F,
     pub radius: Fp,
     pub material: Material,
+}
+
+pub struct Quad {
+    pub corner: Vec3F,
+    pub edges: [Vec3F; 2],
+    pub normal: Vec3F,
+    pub d: Fp,
 }
 
 #[derive(Copy, Clone)]
@@ -130,12 +138,85 @@ impl Sphere {
     }
 }
 
+impl Quad {
+    pub fn new(corner: Vec3F, edge0: Vec3F, edge1: Vec3F) -> Self {
+        let normal = cross(&edge0, &edge1).normalized();
+        let d = dot(&normal, &corner);
+        Self {
+            corner,
+            edges: [edge0, edge1],
+            normal,
+            d,
+        }
+    }
+
+    pub fn other_corner(&self) -> Vec3F {
+        self.corner + self.edges[0] + self.edges[1]
+    }
+
+    pub fn ray_intersect(&self, ray: &Ray, limits: &Range<Fp>) -> RayIntersection {
+        let mut intersection = RayIntersection {
+            hit: false,
+            ..Default::default()
+        };
+
+        let denominator = dot(&self.normal, &ray.direction);
+        if Fp::abs(denominator) > 1e-8 {
+            let t = (self.d - dot(&self.normal, &ray.origin)) / denominator;
+            if limits.contains(&t) {
+                intersection = RayIntersection {
+                    hit: true,
+                    t,
+                    is_normal_outward: false,
+                    hit_point: ray.origin + (t * ray.direction),
+                    normal: self.normal,
+                    u: 0.0,
+                    v: 0.0,
+                }
+            } 
+        }
+
+        intersection
+    }
+}
+
 impl Aabb {
     pub fn from_sphere(s: &Sphere) -> Self {
         let extent = Vec3F::new(s.radius, s.radius, s.radius);
         Self {
             bounds: [s.position - extent, s.position + extent],
         }
+    }
+
+    pub fn from_quad(q: &Quad) -> Self {
+        let p0 = q.corner;
+        let p1 = q.other_corner();
+        let mut bounds = [
+            Vec3F::new(
+                Fp::min(p0.x, p1.x),
+                Fp::min(p0.y, p1.y),
+                Fp::min(p0.z, p1.z)),
+            Vec3F::new(
+                Fp::max(p0.x, p1.x),
+                Fp::max(p0.y, p1.y),
+                Fp::max(p0.z, p1.z)),
+        ];
+
+        // pad the AABB if any side is too narrow.
+        let delta = 0.0001;
+        if (bounds[1].x - bounds[0].x) < delta {
+            bounds[0].x -= delta / 2.0;
+            bounds[1].x += delta / 2.0;
+        }
+        if (bounds[1].y - bounds[0].y) < delta {
+            bounds[0].y -= delta / 2.0;
+            bounds[1].y += delta / 2.0;
+        }
+        if (bounds[1].z - bounds[0].z) < delta {
+            bounds[0].z -= delta / 2.0;
+            bounds[1].z += delta / 2.0;
+        }
+        Self { bounds }
     }
 
     pub fn merge(a: &Aabb, b: &Aabb) -> Self {

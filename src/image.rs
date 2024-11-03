@@ -138,7 +138,6 @@ impl Drop for Image {
             unsafe {
                 stbi_image_free(image_data.as_ptr() as *mut c_void);
             }
-
         }
     }
 }
