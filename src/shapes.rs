@@ -1,7 +1,7 @@
 use crate::materials::Material;
 use crate::types::Fp;
 use crate::vecmath::{cross, dot, Vec3F};
-use std::ops::Range;
+use std::ops::{RangeInclusive, Range};
 
 #[cfg(not(feature = "use-f64"))]
 use std::f32::consts::PI;
@@ -42,12 +42,19 @@ pub struct Quad {
     pub corner: Vec3F,
     pub edges: [Vec3F; 2],
     pub normal: Vec3F,
+    pub w: Vec3F,
     pub d: Fp,
+    pub material: Material,
 }
 
 #[derive(Copy, Clone)]
 pub struct Aabb {
     bounds: [Vec3F; 2], // [min, max]
+}
+
+pub enum Shape {
+    Sphere(Sphere),
+    Quad(Quad),
 }
 
 impl Ray {
@@ -139,14 +146,19 @@ impl Sphere {
 }
 
 impl Quad {
-    pub fn new(corner: Vec3F, edge0: Vec3F, edge1: Vec3F) -> Self {
-        let normal = cross(&edge0, &edge1).normalized();
+    pub fn new(corner: Vec3F, edge0: Vec3F, edge1: Vec3F, material: Material) -> Self {
+        let n = cross(&edge0, &edge1);
+        let n_len_sqr = n.length_squared();
+        let normal = n / n_len_sqr.sqrt();
+        let w = n / n_len_sqr;
         let d = dot(&normal, &corner);
         Self {
             corner,
             edges: [edge0, edge1],
             normal,
+            w,
             d,
+            material,
         }
     }
 
@@ -164,14 +176,23 @@ impl Quad {
         if Fp::abs(denominator) > 1e-8 {
             let t = (self.d - dot(&self.normal, &ray.origin)) / denominator;
             if limits.contains(&t) {
-                intersection = RayIntersection {
-                    hit: true,
-                    t,
-                    is_normal_outward: false,
-                    hit_point: ray.origin + (t * ray.direction),
-                    normal: self.normal,
-                    u: 0.0,
-                    v: 0.0,
+                // Check if the intersection point lies within the quad.
+
+                let hit_point = ray.origin + (t * ray.direction);
+                let corner_to_hit_point = hit_point - self.corner;
+                let alpha = dot(&self.w, &cross(&corner_to_hit_point, &self.edges[1])); 
+                let beta = dot(&self.w, &cross(&self.edges[0], &corner_to_hit_point));
+                let unit_interval = RangeInclusive::new(0.0, 1.0);
+                if unit_interval.contains(&alpha) && unit_interval.contains(&beta) {
+                    intersection = RayIntersection {
+                        hit: true,
+                        t,
+                        is_normal_outward: false,
+                        hit_point,
+                        normal: self.normal,
+                        u: alpha,
+                        v: beta,
+                    }
                 }
             } 
         }
@@ -280,5 +301,28 @@ impl Aabb {
         tmax = Fp::min(tmax, tz_max);
 
         tmin < tmax
+    }
+}
+
+impl Shape {
+    pub fn ray_intersect(&self, ray: &Ray, limits: &Range<Fp>) -> RayIntersection {
+        match self {
+            Shape::Sphere(s) => s.ray_intersect(ray, limits),
+            Shape::Quad(q) => q.ray_intersect(ray, limits),
+        }
+    }
+
+    pub fn calc_aabb(&self) -> Aabb {
+        match self {
+            Shape::Sphere(s) => Aabb::from_sphere(&s),
+            Shape::Quad(q) => Aabb::from_quad(&q),
+        }
+    }
+
+    pub fn get_material(&self) -> &Material {
+        match self {
+            Shape::Sphere(s) => &s.material,
+            Shape::Quad(q) => &q.material,
+        }
     }
 }

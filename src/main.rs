@@ -61,18 +61,20 @@ fn main() {
 
     let image = Mutex::new(Image::new(IMAGE_WIDTH, IMAGE_HEIGHT));
 
-    let scene = Scene::two_globes();
+    let scene = Scene::quads_example();
 
-    let camera = 
-        Camera::builder()
-            .pixel_dimension(IMAGE_WIDTH, IMAGE_HEIGHT)
-            .fov(30.0 / 180.0)
-            .focus_length(10.0)
-            .defocus_angle(0.6 / 180.0)
-            .position(Vec3F::new(13.0, 2.0, 700.0))
-            .lookat(Vec3F::zero())
-            .up(Vec3F::new(0.0, 1.0, 0.0))
-            .build();
+    // let camera = 
+    //     Camera::builder()
+    //         .pixel_dimension(IMAGE_WIDTH, IMAGE_HEIGHT)
+    //         .fov(30.0 / 180.0)
+    //         .focus_length(10.0)
+    //         .defocus_angle(0.6 / 180.0)
+    //         .position(Vec3F::new(13.0, 2.0, 700.0))
+    //         .lookat(Vec3F::zero())
+    //         .up(Vec3F::new(0.0, 1.0, 0.0))
+    //         .build();
+
+    let camera = Scene::quads_example_camera(IMAGE_WIDTH, IMAGE_HEIGHT);
 
     let threads_num = thread::available_parallelism().unwrap().get() as u32;
     let rows_per_thread = IMAGE_HEIGHT / threads_num;
