@@ -17,17 +17,22 @@ pub struct MaterialDielectric {
     refrac_index: Fp,
 }
 
+pub struct MaterialDiffuseLight {
+    albedo: Color3F,
+}
+
 pub enum Material {
     Diffuse(MaterialDiffuse),
     Metal(MaterialMetal),
     Dielectric(MaterialDielectric),
+    DiffuseLight(MaterialDiffuseLight),
 }
 
 fn reflect(in_dir: &Vec3F, normal: &Vec3F) -> Vec3F {
     in_dir - 2.0 * dot(in_dir, normal) * normal
 }
 
-/// `refrac_index` should be in_refrac_index / out_refrac_index where:
+/// `refrac_index` should be `in_refrac_index / out_refrac_index` where:
 /// in_refrac_index = the refractive index of the surface of the incident ray
 /// out_refrac_index = the refractive index of the surface of the outgoing ray
 fn refract(in_dir: &Vec3F, normal: &Vec3F, refrac_index: Fp) -> Vec3F {
@@ -181,6 +186,16 @@ impl MaterialDielectric {
     }
 }
 
+impl MaterialDiffuseLight {
+    pub fn new(albedo: Color3F) -> Self {
+        Self { albedo }
+    }
+
+    pub fn emit(&self, _u: Fp, _v: Fp, _p: Vec3F) -> Color3F {
+        self.albedo
+    }
+}
+
 impl Material {
     pub fn scatter<R: rand::Rng>(
         &self,
@@ -192,6 +207,14 @@ impl Material {
             Material::Diffuse(mat) => mat.scatter(intersection, rand),
             Material::Metal(mat) => mat.scatter(incident_ray, intersection, rand),
             Material::Dielectric(mat) => mat.scatter(incident_ray, intersection, rand),
+            _ => None,
+        }
+    }
+
+    pub fn emit(&self) -> Color3F {
+        match self {
+            Material::DiffuseLight(mat) => mat.emit(0.0, 0.0, Vec3F::zero()),
+            _ => Color3F::zero(),
         }
     }
 }

@@ -64,7 +64,7 @@ fn main() {
 
     let image = Mutex::new(Image::new(IMAGE_WIDTH, IMAGE_HEIGHT));
 
-    let scene = Scene::quads_example();
+    let scene = Scene::cornell_box();
 
     // let camera =
     //     Camera::builder()
@@ -77,7 +77,7 @@ fn main() {
     //         .up(Vec3F::new(0.0, 1.0, 0.0))
     //         .build();
 
-    let camera = Scene::quads_example_camera(IMAGE_WIDTH, IMAGE_HEIGHT);
+    let camera = Scene::cornell_box_camera(IMAGE_WIDTH, IMAGE_HEIGHT);
 
     let threads_num = thread::available_parallelism().unwrap().get() as u32;
     let rows_per_thread = IMAGE_HEIGHT / threads_num;

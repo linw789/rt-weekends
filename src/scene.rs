@@ -1,5 +1,7 @@
 use crate::camera::Camera;
-use crate::materials::{Material, MaterialDielectric, MaterialDiffuse, MaterialMetal};
+use crate::materials::{
+    Material, MaterialDielectric, MaterialDiffuse, MaterialDiffuseLight, MaterialMetal,
+};
 use crate::shapes::{Aabb, Quad, Ray, RayIntersection, Shape, Sphere};
 use crate::types::Fp;
 use crate::vecmath::{Color3F, Vec3F};
@@ -96,6 +98,7 @@ fn bvh_ray_intersect(
 pub struct Scene {
     shapes: Vec<Shape>,
     bvh: Arc<BvhNode>,
+    is_background_sky: bool,
 }
 
 impl Scene {
@@ -116,6 +119,7 @@ impl Scene {
         Self {
             bvh: build_bvh(&shapes, 0),
             shapes,
+            is_background_sky: true,
         }
     }
 
@@ -141,6 +145,7 @@ impl Scene {
         Self {
             bvh: build_bvh(&shapes, 0),
             shapes,
+            is_background_sky: true,
         }
     }
 
@@ -166,6 +171,7 @@ impl Scene {
         Self {
             bvh: build_bvh(&globes, 0),
             shapes: globes,
+            is_background_sky: true,
         }
     }
 
@@ -207,6 +213,7 @@ impl Scene {
         Self {
             bvh: build_bvh(&shapes, 0),
             shapes,
+            is_background_sky: true,
         }
     }
 
@@ -246,6 +253,7 @@ impl Scene {
         Self {
             bvh: build_bvh(&shapes, 0),
             shapes,
+            is_background_sky: true,
         }
     }
 
@@ -291,6 +299,7 @@ impl Scene {
         Self {
             bvh: build_bvh(&shapes, 0),
             shapes,
+            is_background_sky: true,
         }
     }
 
@@ -373,6 +382,7 @@ impl Scene {
         Self {
             bvh: build_bvh(&shapes, 0),
             shapes,
+            is_background_sky: true,
         }
     }
 
@@ -429,6 +439,65 @@ impl Scene {
         Self {
             bvh: build_bvh(&shapes, 0),
             shapes,
+            is_background_sky: true,
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn cornell_box() -> Scene {
+        let shapes = vec![
+            Shape::Quad(Quad::new(
+                Vec3F::new(555.0, 0.0, 0.0),
+                Vec3F::new(0.0, 555.0, 0.0),
+                Vec3F::new(0.0, 0.0, 555.0),
+                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.12, 0.45, 0.15,
+                ))),
+            )),
+            Shape::Quad(Quad::new(
+                Vec3F::new(0.0, 0.0, 0.0),
+                Vec3F::new(0.0, 555.0, 0.0),
+                Vec3F::new(0.0, 0.0, 555.0),
+                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.64, 0.05, 0.05,
+                ))),
+            )),
+            Shape::Quad(Quad::new(
+                Vec3F::new(343.0, 554.0, 332.0),
+                Vec3F::new(-130.0, 0.0, 0.0),
+                Vec3F::new(0.0, 0.0, -105.0),
+                Material::DiffuseLight(MaterialDiffuseLight::new(Color3F::new(1.0, 1.0, 1.0))),
+            )),
+            Shape::Quad(Quad::new(
+                Vec3F::new(0.0, 0.0, 0.0),
+                Vec3F::new(555.0, 0.0, 0.0),
+                Vec3F::new(0.0, 0.0, 555.0),
+                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.73, 0.73, 0.73,
+                ))),
+            )),
+            Shape::Quad(Quad::new(
+                Vec3F::new(555.0, 555.0, 555.0),
+                Vec3F::new(-555.0, 0.0, 0.0),
+                Vec3F::new(0.0, 0.0, -555.0),
+                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.73, 0.73, 0.73,
+                ))),
+            )),
+            Shape::Quad(Quad::new(
+                Vec3F::new(0.0, 0.0, 555.0),
+                Vec3F::new(555.0, 0.0, 0.0),
+                Vec3F::new(0.0, 555.0, 0.0),
+                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.73, 0.73, 0.73,
+                ))),
+            )),
+        ];
+
+        Self {
+            bvh: build_bvh(&shapes, 0),
+            shapes,
+            is_background_sky: false,
         }
     }
 
@@ -441,6 +510,19 @@ impl Scene {
             .defocus_angle(0.0)
             .position(Vec3F::new(0.0, 0.0, 9.0))
             .lookat(Vec3F::zero())
+            .up(Vec3F::new(0.0, 1.0, 0.0))
+            .build()
+    }
+
+    #[allow(dead_code)]
+    pub fn cornell_box_camera(image_width: u32, image_height: u32) -> Camera {
+        Camera::builder()
+            .pixel_dimension(image_width, image_height)
+            .fov(40.0 / 180.0)
+            .focus_length(10.0)
+            .defocus_angle(0.0)
+            .position(Vec3F::new(278.0, 278.0, -800.0))
+            .lookat(Vec3F::new(278.0, 278.0, 0.0))
             .up(Vec3F::new(0.0, 1.0, 0.0))
             .build()
     }
@@ -467,17 +549,22 @@ impl Scene {
 
         let color = if nearest_intersection.hit {
             let material = nearest_material.unwrap();
+            let emission_color = material.emit();
             match material.scatter(ray, &nearest_intersection, rand) {
                 Some((scattered_ray, albedo)) => {
-                    albedo * self.trace(&scattered_ray, rand, depth + 1)
+                    albedo * self.trace(&scattered_ray, rand, depth + 1) + emission_color
                 }
-                None => Color3F::zero(),
+                None => emission_color,
             }
         } else {
-            // simulate the sky color
-            let ray_dir_normalized = ray.direction.normalized();
-            let a = 0.5 * (ray_dir_normalized.y + 1.0);
-            Color3F::new(1.0, 1.0, 1.0) * (1.0 - a) + Color3F::new(0.5, 0.7, 1.0) * a
+            if self.is_background_sky {
+                // simulate the sky color
+                let ray_dir_normalized = ray.direction.normalized();
+                let a = 0.5 * (ray_dir_normalized.y + 1.0);
+                Color3F::new(1.0, 1.0, 1.0) * (1.0 - a) + Color3F::new(0.5, 0.7, 1.0) * a
+            } else {
+                Color3F::zero()
+            }
         };
 
         color
