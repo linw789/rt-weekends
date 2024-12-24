@@ -15,11 +15,14 @@ use camera::Camera;
 use image::{Image, IMAGE_PIXEL_SIZE};
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use scene::Scene;
+use std::io::{stdout, Write};
 use std::path::Path;
-use std::sync::{atomic::{self, AtomicU32}, Mutex};
+use std::sync::{
+    atomic::{self, AtomicU32},
+    Mutex,
+};
 use std::thread;
 use std::time;
-use std::io::{stdout, Write};
 use types::Fp;
 use vecmath::{Color3F, Color3U8, Vec3F};
 
@@ -63,7 +66,7 @@ fn main() {
 
     let scene = Scene::quads_example();
 
-    // let camera = 
+    // let camera =
     //     Camera::builder()
     //         .pixel_dimension(IMAGE_WIDTH, IMAGE_HEIGHT)
     //         .fov(30.0 / 180.0)
@@ -79,21 +82,25 @@ fn main() {
     let threads_num = thread::available_parallelism().unwrap().get() as u32;
     let rows_per_thread = IMAGE_HEIGHT / threads_num;
 
-    println!("trace started (threads: {}, rows per thread: {})", threads_num, rows_per_thread);
+    println!(
+        "trace started (threads: {}, rows per thread: {})",
+        threads_num, rows_per_thread
+    );
 
     let rows_traced = AtomicU32::new(0);
 
     thread::scope(|s| {
         let rows_traced = &rows_traced;
 
-        let progress_thread = s.spawn(move || {
-            loop {
-                let rows_traced = rows_traced.load(atomic::Ordering::Relaxed);
-                print!("\rtrace progress: {:.2}%", (rows_traced as Fp) / (IMAGE_HEIGHT as Fp) * 100.0);
-                stdout().flush().unwrap();
-                if rows_traced == IMAGE_HEIGHT {
-                    break;
-                }
+        let progress_thread = s.spawn(move || loop {
+            let rows_traced = rows_traced.load(atomic::Ordering::Relaxed);
+            print!(
+                "\rtrace progress: {:.2}%",
+                (rows_traced as Fp) / (IMAGE_HEIGHT as Fp) * 100.0
+            );
+            stdout().flush().unwrap();
+            if rows_traced == IMAGE_HEIGHT {
+                break;
             }
         });
 
@@ -149,7 +156,10 @@ fn main() {
 
         assert!(progress_thread.join().is_ok());
 
-        println!("\ntrace completed in {} milliseconds", trace_time.as_millis());
+        println!(
+            "\ntrace completed in {} milliseconds",
+            trace_time.as_millis()
+        );
     });
 
     #[cfg(target_os = "windows")]

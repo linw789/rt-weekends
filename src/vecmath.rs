@@ -88,7 +88,11 @@ impl<T: Copy> From<[T; 3]> for Vec3<T> {
 impl From<Color3U8> for Color3F {
     fn from(v: Color3U8) -> Self {
         let scale = 1.0 / 255.0;
-        Color3F::new((v.x as Fp) * scale, (v.y as Fp) * scale, (v.z as Fp) * scale,)
+        Color3F::new(
+            (v.x as Fp) * scale,
+            (v.y as Fp) * scale,
+            (v.z as Fp) * scale,
+        )
     }
 }
 

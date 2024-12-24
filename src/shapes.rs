@@ -1,7 +1,7 @@
 use crate::materials::Material;
 use crate::types::Fp;
 use crate::vecmath::{cross, dot, Vec3F};
-use std::ops::{RangeInclusive, Range};
+use std::ops::{Range, RangeInclusive};
 
 #[cfg(not(feature = "use-f64"))]
 use std::f32::consts::PI;
@@ -59,11 +59,11 @@ pub enum Shape {
 
 impl Ray {
     pub fn new(origin: Vec3F, dir: Vec3F) -> Self {
-        let inv_dir = Vec3F::new(1.0 / dir.x, 1.0 / dir.y, 1.0 / dir.z); 
+        let inv_dir = Vec3F::new(1.0 / dir.x, 1.0 / dir.y, 1.0 / dir.z);
         Self {
             origin,
             direction: dir,
-            inv_dir, 
+            inv_dir,
             signs: [
                 if inv_dir.x < 0.0 { 1 } else { 0 },
                 if inv_dir.y < 0.0 { 1 } else { 0 },
@@ -180,7 +180,7 @@ impl Quad {
 
                 let hit_point = ray.origin + (t * ray.direction);
                 let corner_to_hit_point = hit_point - self.corner;
-                let alpha = dot(&self.w, &cross(&corner_to_hit_point, &self.edges[1])); 
+                let alpha = dot(&self.w, &cross(&corner_to_hit_point, &self.edges[1]));
                 let beta = dot(&self.w, &cross(&self.edges[0], &corner_to_hit_point));
                 let unit_interval = RangeInclusive::new(0.0, 1.0);
                 if unit_interval.contains(&alpha) && unit_interval.contains(&beta) {
@@ -194,7 +194,7 @@ impl Quad {
                         v: beta,
                     }
                 }
-            } 
+            }
         }
 
         intersection
@@ -216,11 +216,13 @@ impl Aabb {
             Vec3F::new(
                 Fp::min(p0.x, p1.x),
                 Fp::min(p0.y, p1.y),
-                Fp::min(p0.z, p1.z)),
+                Fp::min(p0.z, p1.z),
+            ),
             Vec3F::new(
                 Fp::max(p0.x, p1.x),
                 Fp::max(p0.y, p1.y),
-                Fp::max(p0.z, p1.z)),
+                Fp::max(p0.z, p1.z),
+            ),
         ];
 
         // pad the AABB if any side is too narrow.
@@ -249,12 +251,14 @@ impl Aabb {
                 Vec3F::new(
                     Fp::min(a.bounds[MIN].x, b.bounds[MIN].x),
                     Fp::min(a.bounds[MIN].y, b.bounds[MIN].y),
-                    Fp::min(a.bounds[MIN].z, b.bounds[MIN].z)),
+                    Fp::min(a.bounds[MIN].z, b.bounds[MIN].z),
+                ),
                 Vec3F::new(
                     Fp::max(a.bounds[MAX].x, b.bounds[MAX].x),
                     Fp::max(a.bounds[MAX].y, b.bounds[MAX].y),
-                    Fp::max(a.bounds[MAX].z, b.bounds[MAX].z)),
-            ]
+                    Fp::max(a.bounds[MAX].z, b.bounds[MAX].z),
+                ),
+            ],
         }
     }
 
@@ -267,22 +271,25 @@ impl Aabb {
         // one of the planes of the AABB. This post mentions a way to handle the issue:
         // https://tavianator.com/2015/ray_box_nan.html
 
-        debug_assert!((self.bounds[0].x < self.bounds[1].x) &&
-                      (self.bounds[0].y < self.bounds[1].y) &&
-                      (self.bounds[0].z < self.bounds[1].z));
+        debug_assert!(
+            (self.bounds[0].x < self.bounds[1].x)
+                && (self.bounds[0].y < self.bounds[1].y)
+                && (self.bounds[0].z < self.bounds[1].z)
+        );
 
         const AXIS_X: usize = 0;
         const AXIS_Y: usize = 1;
         const AXIS_Z: usize = 2;
 
-        let mut tmin = (self.bounds[ray.signs[AXIS_X] as usize].x - ray.origin.x) * ray.inv_dir.x; 
-        let mut tmax = (self.bounds[1 - ray.signs[AXIS_X] as usize].x - ray.origin.x) * ray.inv_dir.x; 
+        let mut tmin = (self.bounds[ray.signs[AXIS_X] as usize].x - ray.origin.x) * ray.inv_dir.x;
+        let mut tmax =
+            (self.bounds[1 - ray.signs[AXIS_X] as usize].x - ray.origin.x) * ray.inv_dir.x;
 
-        let ty_min = (self.bounds[ray.signs[AXIS_Y] as usize].y - ray.origin.y) * ray.inv_dir.y; 
-        let ty_max = (self.bounds[1 - ray.signs[AXIS_Y] as usize].y - ray.origin.y) * ray.inv_dir.y; 
+        let ty_min = (self.bounds[ray.signs[AXIS_Y] as usize].y - ray.origin.y) * ray.inv_dir.y;
+        let ty_max = (self.bounds[1 - ray.signs[AXIS_Y] as usize].y - ray.origin.y) * ray.inv_dir.y;
 
-        let tz_min = (self.bounds[ray.signs[AXIS_Z] as usize].z - ray.origin.z) * ray.inv_dir.z; 
-        let tz_max = (self.bounds[1 - ray.signs[AXIS_Z] as usize].z - ray.origin.z) * ray.inv_dir.z; 
+        let tz_min = (self.bounds[ray.signs[AXIS_Z] as usize].z - ray.origin.z) * ray.inv_dir.z;
+        let tz_max = (self.bounds[1 - ray.signs[AXIS_Z] as usize].z - ray.origin.z) * ray.inv_dir.z;
 
         // If either tmin or ty_min is NaN, Fp::max returns the non-NaN value. tmin and ty_min
         // can't be both NaN, because we assert that AABB can't be degenerate. Specifically,
@@ -296,7 +303,7 @@ impl Aabb {
         // then: Fp::max(tmin, ty_min) -> ty_min, and Fp::min(tmax, ty_max) -> ty_max.
         tmin = Fp::max(tmin, ty_min);
         tmax = Fp::min(tmax, ty_max);
-        
+
         tmin = Fp::max(tmin, tz_min);
         tmax = Fp::min(tmax, tz_max);
 

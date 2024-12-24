@@ -1,7 +1,7 @@
 use crate::shapes::{Ray, RayIntersection};
+use crate::textures::{Texture, TextureChecker, TextureImage, TextureSolidColor};
 use crate::types::Fp;
 use crate::vecmath::{dot, Color3F, Vec3F};
-use crate::textures::{Texture, TextureSolidColor, TextureChecker, TextureImage};
 use std::path::Path;
 
 pub struct MaterialDiffuse {
@@ -39,20 +39,20 @@ fn refract(in_dir: &Vec3F, normal: &Vec3F, refrac_index: Fp) -> Vec3F {
 
 impl MaterialDiffuse {
     pub fn new_solid_color(albedo: Color3F) -> Self {
-        Self { 
-            tex: Texture::Solid(TextureSolidColor::new(albedo))
+        Self {
+            tex: Texture::Solid(TextureSolidColor::new(albedo)),
         }
     }
 
     pub fn new_checker(even: Color3F, odd: Color3F, scale: Fp) -> Self {
         Self {
-            tex: Texture::Checker(TextureChecker::new(even, odd, scale))
+            tex: Texture::Checker(TextureChecker::new(even, odd, scale)),
         }
     }
 
     pub fn from_image<P: AsRef<Path>>(image_path: P) -> Self {
         Self {
-            tex: Texture::Image(TextureImage::from_file(image_path))
+            tex: Texture::Image(TextureImage::from_file(image_path)),
         }
     }
 
@@ -90,7 +90,8 @@ impl MaterialDiffuse {
 
         Some((
             Ray::new(intersection.hit_point, scattered_ray),
-            self.tex.value(intersection.u, intersection.v, intersection.hit_point),
+            self.tex
+                .value(intersection.u, intersection.v, intersection.hit_point),
         ))
     }
 }
@@ -130,10 +131,7 @@ impl MaterialMetal {
         // If the `scattered_ray` points to the opposite direction as `intersection.normal`,
         // discard it (as if the surface absorbs the `incident_ray`).
         if dot(&scattered_ray, &intersection.normal) > 0.0 {
-            Some((
-                Ray::new(intersection.hit_point, scattered_ray),
-                self.albedo,
-            ))
+            Some((Ray::new(intersection.hit_point, scattered_ray), self.albedo))
         } else {
             None
         }
@@ -172,10 +170,7 @@ impl MaterialDielectric {
             refract(&incident_ray.direction, &intersection.normal, refrac_index)
         };
 
-        Some((
-            Ray::new(intersection.hit_point, out_dir),
-            attenuation,
-        ))
+        Some((Ray::new(intersection.hit_point, out_dir), attenuation))
     }
 
     fn reflectance(cos_in_angle: Fp, refrac_index: Fp) -> Fp {

@@ -1,13 +1,13 @@
+use crate::camera::Camera;
 use crate::materials::{Material, MaterialDielectric, MaterialDiffuse, MaterialMetal};
-use crate::shapes::{Aabb, Ray, RayIntersection, Sphere, Shape, Quad};
+use crate::shapes::{Aabb, Quad, Ray, RayIntersection, Shape, Sphere};
 use crate::types::Fp;
 use crate::vecmath::{Color3F, Vec3F};
-use crate::camera::Camera;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
-use std::vec::Vec;
 use std::ops::Range;
-use std::sync::Arc;
 use std::path::Path;
+use std::sync::Arc;
+use std::vec::Vec;
 
 pub struct BvhLeaf {
     pub aabb: Aabb,
@@ -48,20 +48,34 @@ fn build_bvh(shapes: &[Shape], shape_start: usize) -> Arc<BvhNode> {
         Arc::new(BvhNode::Link(BvhLink {
             aabb: Aabb::merge(&left.aabb(), &right.aabb()),
             left,
-            right
+            right,
         }))
     }
 }
 
-fn bvh_ray_intersect(bvh_node: Arc<BvhNode>, shapes: &[Shape], ray: &Ray, limits: &Range<Fp>) -> (RayIntersection, usize) {
+fn bvh_ray_intersect(
+    bvh_node: Arc<BvhNode>,
+    shapes: &[Shape],
+    ray: &Ray,
+    limits: &Range<Fp>,
+) -> (RayIntersection, usize) {
     if bvh_node.aabb().ray_intersect(ray) {
         match &*bvh_node {
-            BvhNode::Leaf(leaf) => (shapes[leaf.shape_index].ray_intersect(ray, limits), leaf.shape_index),
+            BvhNode::Leaf(leaf) => (
+                shapes[leaf.shape_index].ray_intersect(ray, limits),
+                leaf.shape_index,
+            ),
             BvhNode::Link(link) => {
-                let (left_intersection, left_sphere_index) = bvh_ray_intersect(Arc::clone(&link.left), shapes, ray, limits);
-                let right_limits = limits.start .. if left_intersection.hit { left_intersection.t } else { limits.end };
-                let (right_intersection, right_sphere_index) = bvh_ray_intersect(Arc::clone(&link.right), shapes, ray, &right_limits);
-                if right_intersection.hit { 
+                let (left_intersection, left_sphere_index) =
+                    bvh_ray_intersect(Arc::clone(&link.left), shapes, ray, limits);
+                let right_limits = limits.start..if left_intersection.hit {
+                    left_intersection.t
+                } else {
+                    limits.end
+                };
+                let (right_intersection, right_sphere_index) =
+                    bvh_ray_intersect(Arc::clone(&link.right), shapes, ray, &right_limits);
+                if right_intersection.hit {
                     (right_intersection, right_sphere_index)
                 } else {
                     (left_intersection, left_sphere_index)
@@ -74,7 +88,7 @@ fn bvh_ray_intersect(bvh_node: Arc<BvhNode>, shapes: &[Shape], ray: &Ray, limits
                 hit: false,
                 ..Default::default()
             },
-            0
+            0,
         )
     }
 }
@@ -94,7 +108,9 @@ impl Scene {
         shapes.push(Shape::Sphere(Sphere::new(
             Vec3F::new(0.0, 0.0, -1.0),
             0.5,
-            Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.7, 0.3, 0.3))),
+            Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                0.7, 0.3, 0.3,
+            ))),
         )));
 
         Self {
@@ -109,12 +125,16 @@ impl Scene {
             Shape::Sphere(Sphere::new(
                 Vec3F::new(0.0, -100.5, -1.0),
                 100.0,
-                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.7, 0.3, 0.3))),
+                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.7, 0.3, 0.3,
+                ))),
             )),
             Shape::Sphere(Sphere::new(
                 Vec3F::new(0.0, 0.0, -1.0),
                 0.5,
-                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.8, 0.6, 0.2))),
+                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.8, 0.6, 0.2,
+                ))),
             )),
         ];
 
@@ -130,14 +150,16 @@ impl Scene {
             Shape::Sphere(Sphere::new(
                 Vec3F::new(0.0, -100.5, -1.0),
                 100.0,
-                Material::Diffuse(MaterialDiffuse::from_image(
-                    Path::new("images/earthmap.jpg"))),
+                Material::Diffuse(MaterialDiffuse::from_image(Path::new(
+                    "images/earthmap.jpg",
+                ))),
             )),
             Shape::Sphere(Sphere::new(
                 Vec3F::new(0.0, 100.5, -1.0),
                 100.0,
-                Material::Diffuse(MaterialDiffuse::from_image(
-                    Path::new("images/earthmap.jpg"))),
+                Material::Diffuse(MaterialDiffuse::from_image(Path::new(
+                    "images/earthmap.jpg",
+                ))),
             )),
         ];
 
@@ -150,31 +172,36 @@ impl Scene {
     #[allow(dead_code)]
     pub fn three_spheres_metal() -> Scene {
         let shapes = vec![
-                // ground
-                Shape::Sphere(Sphere::new(
-                    Vec3F::new(0.0, -100.5, -1.0),
-                    100.0,
-                    Material::Diffuse(MaterialDiffuse::new_checker(
-                        Color3F::new(0.2, 0.3, 0.1), Color3F::new(0.9, 0.9, 0.9), 0.32)),
+            // ground
+            Shape::Sphere(Sphere::new(
+                Vec3F::new(0.0, -100.5, -1.0),
+                100.0,
+                Material::Diffuse(MaterialDiffuse::new_checker(
+                    Color3F::new(0.2, 0.3, 0.1),
+                    Color3F::new(0.9, 0.9, 0.9),
+                    0.32,
                 )),
-                // center
-                Shape::Sphere(Sphere::new(
-                    Vec3F::new(0.0, 0.0, -1.2),
-                    0.5,
-                    Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.1, 0.2, 0.5))),
-                )),
-                // left
-                Shape::Sphere(Sphere::new(
-                    Vec3F::new(-1.0, 0.0, -1.0),
-                    0.5,
-                    Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.8, 0.8), 0.3)),
-                )),
-                // right
-                Shape::Sphere(Sphere::new(
-                    Vec3F::new(1.0, 0.0, -1.0),
-                    0.5,
-                    Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.6, 0.2), 1.0)),
-                )),
+            )),
+            // center
+            Shape::Sphere(Sphere::new(
+                Vec3F::new(0.0, 0.0, -1.2),
+                0.5,
+                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.1, 0.2, 0.5,
+                ))),
+            )),
+            // left
+            Shape::Sphere(Sphere::new(
+                Vec3F::new(-1.0, 0.0, -1.0),
+                0.5,
+                Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.8, 0.8), 0.3)),
+            )),
+            // right
+            Shape::Sphere(Sphere::new(
+                Vec3F::new(1.0, 0.0, -1.0),
+                0.5,
+                Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.6, 0.2), 1.0)),
+            )),
         ];
 
         Self {
@@ -186,30 +213,34 @@ impl Scene {
     #[allow(dead_code)]
     pub fn three_spheres_dielectric() -> Scene {
         let shapes = vec![
-                // ground
-                Shape::Sphere(Sphere::new(
-                    Vec3F::new(0.0, -100.5, -1.0),
-                    100.0,
-                    Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.8, 0.8, 0.0))),
-                )),
-                // center
-                Shape::Sphere(Sphere::new(
-                    Vec3F::new(0.0, 0.0, -1.2),
-                    0.5,
-                    Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.1, 0.2, 0.5))),
-                )),
-                // left
-                Shape::Sphere(Sphere::new(
-                    Vec3F::new(-1.0, 0.0, -1.0),
-                    0.5,
-                    Material::Dielectric(MaterialDielectric::new(1.0 / 1.333)),
-                )),
-                // right
-                Shape::Sphere(Sphere::new(
-                    Vec3F::new(1.0, 0.0, -1.0),
-                    0.5,
-                    Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.6, 0.2), 1.0)),
-                )),
+            // ground
+            Shape::Sphere(Sphere::new(
+                Vec3F::new(0.0, -100.5, -1.0),
+                100.0,
+                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.8, 0.8, 0.0,
+                ))),
+            )),
+            // center
+            Shape::Sphere(Sphere::new(
+                Vec3F::new(0.0, 0.0, -1.2),
+                0.5,
+                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.1, 0.2, 0.5,
+                ))),
+            )),
+            // left
+            Shape::Sphere(Sphere::new(
+                Vec3F::new(-1.0, 0.0, -1.0),
+                0.5,
+                Material::Dielectric(MaterialDielectric::new(1.0 / 1.333)),
+            )),
+            // right
+            Shape::Sphere(Sphere::new(
+                Vec3F::new(1.0, 0.0, -1.0),
+                0.5,
+                Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.6, 0.2), 1.0)),
+            )),
         ];
 
         Self {
@@ -221,36 +252,40 @@ impl Scene {
     #[allow(dead_code)]
     pub fn three_spheres_hollow_glass() -> Scene {
         let shapes = vec![
-                // ground
-                Shape::Sphere(Sphere::new(
-                    Vec3F::new(0.0, -100.5, -1.0),
-                    100.0,
-                    Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.8, 0.8, 0.0))),
-                )),
-                // center
-                Shape::Sphere(Sphere::new(
-                    Vec3F::new(0.0, 0.0, -1.2),
-                    0.5,
-                    Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.1, 0.2, 0.5))),
-                )),
-                // left
-                Shape::Sphere(Sphere::new(
-                    Vec3F::new(-1.0, 0.0, -1.0),
-                    0.5,
-                    Material::Dielectric(MaterialDielectric::new(1.5)),
-                )),
-                // air bubble inside the left glass sphere
-                Shape::Sphere(Sphere::new(
-                    Vec3F::new(-1.0, 0.0, -1.0),
-                    0.4,
-                    Material::Dielectric(MaterialDielectric::new(1.0 / 1.5)),
-                )),
-                // right
-                Shape::Sphere(Sphere::new(
-                    Vec3F::new(1.0, 0.0, -1.0),
-                    0.5,
-                    Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.6, 0.2), 1.0)),
-                )),
+            // ground
+            Shape::Sphere(Sphere::new(
+                Vec3F::new(0.0, -100.5, -1.0),
+                100.0,
+                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.8, 0.8, 0.0,
+                ))),
+            )),
+            // center
+            Shape::Sphere(Sphere::new(
+                Vec3F::new(0.0, 0.0, -1.2),
+                0.5,
+                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.1, 0.2, 0.5,
+                ))),
+            )),
+            // left
+            Shape::Sphere(Sphere::new(
+                Vec3F::new(-1.0, 0.0, -1.0),
+                0.5,
+                Material::Dielectric(MaterialDielectric::new(1.5)),
+            )),
+            // air bubble inside the left glass sphere
+            Shape::Sphere(Sphere::new(
+                Vec3F::new(-1.0, 0.0, -1.0),
+                0.4,
+                Material::Dielectric(MaterialDielectric::new(1.0 / 1.5)),
+            )),
+            // right
+            Shape::Sphere(Sphere::new(
+                Vec3F::new(1.0, 0.0, -1.0),
+                0.5,
+                Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.6, 0.2), 1.0)),
+            )),
         ];
 
         Self {
@@ -266,7 +301,9 @@ impl Scene {
             Shape::Sphere(Sphere::new(
                 Vec3F::new(0.0, -1000.0, 0.0),
                 1000.0,
-                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.5, 0.5, 0.5))),
+                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.5, 0.5, 0.5,
+                ))),
             )),
             Shape::Sphere(Sphere::new(
                 Vec3F::new(0.0, 1.0, 0.0),
@@ -276,7 +313,9 @@ impl Scene {
             Shape::Sphere(Sphere::new(
                 Vec3F::new(-4.0, 1.0, 0.0),
                 1.0,
-                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.4, 0.2, 0.1))),
+                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.4, 0.2, 0.1,
+                ))),
             )),
             Shape::Sphere(Sphere::new(
                 Vec3F::new(4.0, 1.0, 0.0),
@@ -340,51 +379,51 @@ impl Scene {
     #[allow(dead_code)]
     pub fn quads_example() -> Scene {
         let shapes = vec![
-            // left red 
-            Shape::Quad(
-                Quad::new(
-                    Vec3F::new(-3.0, -2.0, 5.0),
-                    Vec3F::new(0.0, 0.0, -4.0),
-                    Vec3F::new(0.0, 4.0, 0.0),
-                    Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(1.0, 0.2, 0.2)))
-                )
-            ),
+            // left red
+            Shape::Quad(Quad::new(
+                Vec3F::new(-3.0, -2.0, 5.0),
+                Vec3F::new(0.0, 0.0, -4.0),
+                Vec3F::new(0.0, 4.0, 0.0),
+                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    1.0, 0.2, 0.2,
+                ))),
+            )),
             // back green
-            Shape::Quad(
-                Quad::new(
-                    Vec3F::new(-2.0, -2.0, 0.0),
-                    Vec3F::new(4.0, 0.0, 0.0),
-                    Vec3F::new(0.0, 4.0, 0.0),
-                    Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.2, 1.0, 0.2)))
-                )
-            ),
+            Shape::Quad(Quad::new(
+                Vec3F::new(-2.0, -2.0, 0.0),
+                Vec3F::new(4.0, 0.0, 0.0),
+                Vec3F::new(0.0, 4.0, 0.0),
+                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.2, 1.0, 0.2,
+                ))),
+            )),
             // right blue
-            Shape::Quad(
-                Quad::new(
-                    Vec3F::new(3.0, -2.0, 1.0),
-                    Vec3F::new(0.0, 0.0, 4.0),
-                    Vec3F::new(0.0, 4.0, 0.0),
-                    Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.2, 0.2, 1.0)))
-                )
-            ),
+            Shape::Quad(Quad::new(
+                Vec3F::new(3.0, -2.0, 1.0),
+                Vec3F::new(0.0, 0.0, 4.0),
+                Vec3F::new(0.0, 4.0, 0.0),
+                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.2, 0.2, 1.0,
+                ))),
+            )),
             // upper orange
-            Shape::Quad(
-                Quad::new(
-                    Vec3F::new(-2.0, 3.0, 1.0),
-                    Vec3F::new(4.0, 0.0, 0.0),
-                    Vec3F::new(0.0, 0.0, 4.0),
-                    Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(1.0, 0.5, 0.0)))
-                )
-            ),
+            Shape::Quad(Quad::new(
+                Vec3F::new(-2.0, 3.0, 1.0),
+                Vec3F::new(4.0, 0.0, 0.0),
+                Vec3F::new(0.0, 0.0, 4.0),
+                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    1.0, 0.5, 0.0,
+                ))),
+            )),
             // lower teal
-            Shape::Quad(
-                Quad::new(
-                    Vec3F::new(-2.0, -3.0, 5.0),
-                    Vec3F::new(4.0, 0.0, 0.0),
-                    Vec3F::new(0.0, 0.0, -4.0),
-                    Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.2, 0.2, 0.8)))
-                )
-            ),
+            Shape::Quad(Quad::new(
+                Vec3F::new(-2.0, -3.0, 5.0),
+                Vec3F::new(4.0, 0.0, 0.0),
+                Vec3F::new(0.0, 0.0, -4.0),
+                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.2, 0.2, 0.8,
+                ))),
+            )),
         ];
 
         Self {
@@ -450,7 +489,8 @@ impl Scene {
         }
 
         let limits = 0.001..Fp::MAX;
-        let (intersection, sphere_index) = bvh_ray_intersect(Arc::clone(&self.bvh), &self.shapes, &ray, &limits); 
+        let (intersection, sphere_index) =
+            bvh_ray_intersect(Arc::clone(&self.bvh), &self.shapes, &ray, &limits);
 
         let color = if intersection.hit {
             let material = &self.shapes[sphere_index].get_material();
@@ -467,7 +507,7 @@ impl Scene {
             Color3F::new(1.0, 1.0, 1.0) * (1.0 - a) + Color3F::new(0.5, 0.7, 1.0) * a
         };
 
-        color 
+        color
     }
 }
 

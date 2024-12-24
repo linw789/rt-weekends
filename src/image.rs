@@ -1,9 +1,9 @@
 use crate::types::Fp;
-use crate::vecmath::{Color3U8, Color3F};
+use crate::vecmath::{Color3F, Color3U8};
 use libc::{c_char, c_int, c_void};
 use std::ffi::CString;
-use std::path::Path;
 use std::mem;
+use std::path::Path;
 
 #[link(name = "stb_image")]
 extern "C" {
@@ -64,7 +64,8 @@ impl Image {
                 &mut image_width,
                 &mut image_height,
                 &mut image_components,
-                0)
+                0,
+            )
         };
         assert!(image_data != std::ptr::null());
         assert!(image_components == IMAGE_PIXEL_SIZE as c_int);
@@ -78,7 +79,8 @@ impl Image {
                 Vec::from_raw_parts(
                     image_data as *mut [u8; IMAGE_PIXEL_SIZE],
                     pixel_size,
-                    pixel_size)
+                    pixel_size,
+                )
             },
         }
     }

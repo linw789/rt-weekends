@@ -50,7 +50,11 @@ impl TextureChecker {
         // It's easy to visualize in 2D why the formula below forms a checker pattern, but I'm not
         // so sure about 3D.
         let is_even = (xi + yi + zi) % 2 == 0;
-        if is_even { self.even_color } else { self.odd_color }
+        if is_even {
+            self.even_color
+        } else {
+            self.odd_color
+        }
     }
 }
 
