@@ -16,7 +16,7 @@ use image::{Image, IMAGE_PIXEL_SIZE};
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use scene::Scene;
 use std::io::{stdout, Write};
-use std::path::Path;
+use std::path::PathBuf;
 use std::sync::{
     atomic::{self, AtomicU32},
     Mutex,
@@ -162,10 +162,7 @@ fn main() {
         );
     });
 
-    #[cfg(target_os = "windows")]
-    let image_path = Path::new("C:\\Projects\\rt-weekends\\render.bmp");
-    #[cfg(target_os = "linux")]
-    let image_path = Path::new("/home/linw/Projects/rt-weekends/render.bmp");
+    let image_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("rendered.bmp");
 
-    image.lock().unwrap().write_bmp(image_path).unwrap();
+    image.lock().unwrap().write_bmp(&image_path).unwrap();
 }
