@@ -102,7 +102,7 @@ pub struct Scene {
 }
 
 impl Scene {
-    const TRACE_MAX_DEPTH: u32 = 5;
+    const TRACE_MAX_DEPTH: u32 = 50;
 
     #[allow(dead_code)]
     pub fn one_sphere() -> Self {
@@ -448,8 +448,8 @@ impl Scene {
         let shapes = vec![
             Shape::Quad(Quad::new(
                 Vec3F::new(555.0, 0.0, 0.0),
-                Vec3F::new(0.0, 555.0, 0.0),
                 Vec3F::new(0.0, 0.0, 555.0),
+                Vec3F::new(0.0, 555.0, 0.0),
                 Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
                     0.12, 0.45, 0.15,
                 ))),
@@ -466,12 +466,12 @@ impl Scene {
                 Vec3F::new(343.0, 554.0, 332.0),
                 Vec3F::new(-130.0, 0.0, 0.0),
                 Vec3F::new(0.0, 0.0, -105.0),
-                Material::DiffuseLight(MaterialDiffuseLight::new(Color3F::new(1.0, 1.0, 1.0))),
+                Material::DiffuseLight(MaterialDiffuseLight::new(Color3F::new(15.0, 15.0, 15.0))),
             )),
             Shape::Quad(Quad::new(
                 Vec3F::new(0.0, 0.0, 0.0),
-                Vec3F::new(555.0, 0.0, 0.0),
                 Vec3F::new(0.0, 0.0, 555.0),
+                Vec3F::new(555.0, 0.0, 0.0),
                 Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
                     0.73, 0.73, 0.73,
                 ))),
@@ -486,8 +486,8 @@ impl Scene {
             )),
             Shape::Quad(Quad::new(
                 Vec3F::new(0.0, 0.0, 555.0),
-                Vec3F::new(555.0, 0.0, 0.0),
                 Vec3F::new(0.0, 555.0, 0.0),
+                Vec3F::new(555.0, 0.0, 0.0),
                 Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
                     0.73, 0.73, 0.73,
                 ))),
