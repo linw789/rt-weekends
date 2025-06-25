@@ -40,6 +40,7 @@ fn trace_row<R: rand::Rng>(
     row_index: u32,
     row_pixels: &mut [[u8; IMAGE_PIXEL_SIZE]],
     pixel_samples: &[(Fp, Fp)],
+    pixel_samples_scale: Fp,
     rand: &mut R,
 ) {
     for col in 0..row_pixels.len() {
@@ -50,7 +51,7 @@ fn trace_row<R: rand::Rng>(
             pixel_color += scene.trace(&ray, rand, 0);
         }
 
-        pixel_color = pixel_color / (pixel_samples.len() as Fp);
+        pixel_color = pixel_color * pixel_samples_scale;
         pixel_color = linear_to_gamma(&pixel_color);
 
         row_pixels[col] = Color3U8::from(pixel_color).into();
@@ -60,7 +61,7 @@ fn trace_row<R: rand::Rng>(
 fn main() {
     const IMAGE_WIDTH: u32 = 1200;
     const IMAGE_HEIGHT: u32 = 800;
-    const PIXEL_SAMPLE_SIZE: usize = 50;
+    const PIXEL_SAMPLE_SIZE: usize = 100;
 
     let image = Mutex::new(Image::new(IMAGE_WIDTH, IMAGE_HEIGHT));
 
@@ -121,13 +122,33 @@ fn main() {
             let camera = &camera;
 
             trace_threads.push(s.spawn(move || {
+                let sqrt_spp = (PIXEL_SAMPLE_SIZE as Fp).sqrt(); // square root of number of samples per pixel
+                let pixel_samples_scale = 1.0 / (sqrt_spp * sqrt_spp);
+                let inv_sqrt_spp = 1.0 / sqrt_spp;
+
                 let mut rand = SmallRng::seed_from_u64(1317);
-                let pixel_samples: [(Fp, Fp); PIXEL_SAMPLE_SIZE] = std::array::from_fn(|_| {
-                    (
-                        rand.gen_range(0.0..1.0 as Fp),
-                        rand.gen_range(0.0..1.0 as Fp),
-                    )
-                });
+
+                // Stratified samples.
+                // Divide the pixel into a sqrt_spp by sqrt_spp grid. Pixl a sample point in each
+                // grid cell. 
+                // Assume the pixel has the size [0,0] to [1.0,1.0]. 
+                let sqrt_spp_u32 = sqrt_spp as u32;
+                let mut pixel_samples: Vec<(Fp, Fp)> = Vec::new();
+                pixel_samples.reserve((sqrt_spp_u32 * sqrt_spp_u32) as usize);
+                let mut si = 0.0;
+                let mut sj = 0.0;
+                while si < sqrt_spp {
+                    while sj < sqrt_spp {
+                        pixel_samples.push(
+                            (
+                                rand.gen_range((si * inv_sqrt_spp)..((si + 1.0) * inv_sqrt_spp)),
+                                rand.gen_range((sj * inv_sqrt_spp)..((sj + 1.0) * inv_sqrt_spp))
+                            )
+                        );
+                        sj += 1.0;
+                    }
+                    si += 1.0;
+                }
 
                 let mut row_pixels: Vec<[u8; IMAGE_PIXEL_SIZE]> = vec![];
                 row_pixels.resize(IMAGE_WIDTH as usize, [0, 0, 0]);
@@ -140,6 +161,7 @@ fn main() {
                         row_index,
                         &mut row_pixels,
                         &pixel_samples,
+                        pixel_samples_scale,
                         &mut rand,
                     );
                     image.lock().unwrap().write_row(row_index, &row_pixels);
