@@ -1,6 +1,6 @@
 use crate::camera::Camera;
 use crate::materials::{
-    Material, MaterialDielectric, MaterialDiffuse, MaterialDiffuseLight, MaterialMetal,
+    Material, MaterialDielectric, MaterialDiffuse, MaterialDiffuseLight, MaterialMetal
 };
 use crate::shapes::{Aabb, Quad, Ray, RayIntersection, Shape, Sphere};
 use crate::types::Fp;
@@ -96,8 +96,9 @@ fn bvh_ray_intersect(
 }
 
 pub struct Scene {
+    materials: Vec<Arc<Material>>,
     shapes: Vec<Shape>,
-    bvh: Arc<BvhNode>,
+    // bvh: Arc<BvhNode>,
     is_background_sky: bool,
 }
 
@@ -106,230 +107,237 @@ impl Scene {
 
     #[allow(dead_code)]
     pub fn one_sphere() -> Self {
-        let mut shapes = Vec::new();
+        let materials = vec![Arc::new(Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.7, 0.3, 0.3))))];
 
-        shapes.push(Shape::Sphere(Sphere::new(
-            Vec3F::new(0.0, 0.0, -1.0),
-            0.5,
-            Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
-                0.7, 0.3, 0.3,
-            ))),
-        )));
+        let shapes = vec![Shape::Sphere(Sphere::new(Vec3F::new(0.0, 0.0, -1.0), 0.5, Arc::clone(&materials[0])))];
 
         Self {
-            bvh: build_bvh(&shapes, 0),
+            materials,
             shapes,
+            // bvh: build_bvh(&shapes, 0),
             is_background_sky: true,
         }
     }
 
     #[allow(dead_code)]
     pub fn two_spheres() -> Scene {
+        let mat0 = Arc::new(Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.7, 0.3, 0.3))));
+        let mat1 = Arc::new(Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.8, 0.6, 0.2))));
+        let materials = vec![Arc::clone(&mat0), Arc::clone(&mat1)];
+
         let shapes = vec![
-            Shape::Sphere(Sphere::new(
-                Vec3F::new(0.0, -100.5, -1.0),
-                100.0,
-                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
-                    0.7, 0.3, 0.3,
-                ))),
-            )),
-            Shape::Sphere(Sphere::new(
-                Vec3F::new(0.0, 0.0, -1.0),
-                0.5,
-                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
-                    0.8, 0.6, 0.2,
-                ))),
-            )),
+            Shape::Sphere(Sphere::new(Vec3F::new(0.0, -100.5, -1.0), 100.0, Arc::clone(&mat0))),
+            Shape::Sphere(Sphere::new(Vec3F::new(0.0, 0.0, -1.0), 0.5,Arc::clone(&mat1))),
         ];
 
         Self {
-            bvh: build_bvh(&shapes, 0),
+            materials,
             shapes,
+            // bvh: build_bvh(&shapes, 0),
             is_background_sky: true,
         }
     }
 
     #[allow(dead_code)]
     pub fn two_globes() -> Scene {
+        let mat = Arc::new(Material::Diffuse(MaterialDiffuse::from_image(Path::new("images/earthmap.jpg"))));
+        let materials = vec![Arc::clone(&mat)];
+
         let globes = vec![
-            Shape::Sphere(Sphere::new(
-                Vec3F::new(0.0, -100.5, -1.0),
-                100.0,
-                Material::Diffuse(MaterialDiffuse::from_image(Path::new(
-                    "images/earthmap.jpg",
-                ))),
-            )),
-            Shape::Sphere(Sphere::new(
-                Vec3F::new(0.0, 100.5, -1.0),
-                100.0,
-                Material::Diffuse(MaterialDiffuse::from_image(Path::new(
-                    "images/earthmap.jpg",
-                ))),
-            )),
+            Shape::Sphere(Sphere::new(Vec3F::new(0.0, -100.5, -1.0), 100.0, Arc::clone(&mat))),
+            Shape::Sphere(Sphere::new(Vec3F::new(0.0, 100.5, -1.0), 100.0, Arc::clone(&mat))),
         ];
 
         Self {
-            bvh: build_bvh(&globes, 0),
+            materials,
             shapes: globes,
+            // bvh: build_bvh(&globes, 0),
             is_background_sky: true,
         }
     }
 
     #[allow(dead_code)]
     pub fn three_spheres_metal() -> Scene {
+        let mat_checker = Arc::new(Material::Diffuse(MaterialDiffuse::new_checker(
+                    Color3F::new(0.2, 0.3, 0.1),
+                    Color3F::new(0.9, 0.9, 0.9),
+                    0.32,
+                )));
+        let mat_solid = Arc::new(Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.1, 0.2, 0.5,
+                ))));
+        let mat_metal0 = Arc::new(Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.8, 0.8), 0.3)));
+        let mat_metal1 = Arc::new(Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.6, 0.2), 1.0)));
+        let materials = vec![Arc::clone(&mat_checker), Arc::clone(&mat_solid), Arc::clone(&mat_metal0), Arc::clone(&mat_metal1)];
+
         let shapes = vec![
             // ground
             Shape::Sphere(Sphere::new(
                 Vec3F::new(0.0, -100.5, -1.0),
                 100.0,
-                Material::Diffuse(MaterialDiffuse::new_checker(
-                    Color3F::new(0.2, 0.3, 0.1),
-                    Color3F::new(0.9, 0.9, 0.9),
-                    0.32,
-                )),
+                Arc::clone(&mat_checker)
             )),
             // center
             Shape::Sphere(Sphere::new(
                 Vec3F::new(0.0, 0.0, -1.2),
                 0.5,
-                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
-                    0.1, 0.2, 0.5,
-                ))),
+                Arc::clone(&mat_solid)
             )),
             // left
             Shape::Sphere(Sphere::new(
                 Vec3F::new(-1.0, 0.0, -1.0),
                 0.5,
-                Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.8, 0.8), 0.3)),
+                Arc::clone(&mat_metal0)
             )),
             // right
             Shape::Sphere(Sphere::new(
                 Vec3F::new(1.0, 0.0, -1.0),
                 0.5,
-                Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.6, 0.2), 1.0)),
+                Arc::clone(&mat_metal1)
             )),
         ];
 
         Self {
-            bvh: build_bvh(&shapes, 0),
+            materials,
             shapes,
+            // bvh: build_bvh(&shapes, 0),
             is_background_sky: true,
         }
     }
 
     #[allow(dead_code)]
     pub fn three_spheres_dielectric() -> Scene {
+        let mat_diffuse0 = Arc::new(Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.8, 0.8, 0.0,
+                ))));
+        let mat_diffuse1 = Arc::new(Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.1, 0.2, 0.5,
+                ))));
+        let mat_dielectric = Arc::new(Material::Dielectric(MaterialDielectric::new(1.0 / 1.333)));
+        let mat_metal = Arc::new(Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.6, 0.2), 1.0)));
+        let materials = vec![Arc::clone(&mat_diffuse0), Arc::clone(&mat_diffuse1), Arc::clone(&mat_dielectric), Arc::clone(&mat_metal)];
+
         let shapes = vec![
             // ground
             Shape::Sphere(Sphere::new(
                 Vec3F::new(0.0, -100.5, -1.0),
                 100.0,
-                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
-                    0.8, 0.8, 0.0,
-                ))),
+                Arc::clone(&mat_diffuse0)
             )),
             // center
             Shape::Sphere(Sphere::new(
                 Vec3F::new(0.0, 0.0, -1.2),
                 0.5,
-                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
-                    0.1, 0.2, 0.5,
-                ))),
+                Arc::clone(&mat_diffuse1)
             )),
             // left
             Shape::Sphere(Sphere::new(
                 Vec3F::new(-1.0, 0.0, -1.0),
                 0.5,
-                Material::Dielectric(MaterialDielectric::new(1.0 / 1.333)),
+                Arc::clone(&mat_dielectric)
             )),
             // right
             Shape::Sphere(Sphere::new(
                 Vec3F::new(1.0, 0.0, -1.0),
                 0.5,
-                Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.6, 0.2), 1.0)),
-            )),
+                Arc::clone(&mat_metal)))
         ];
 
         Self {
-            bvh: build_bvh(&shapes, 0),
+            materials,
             shapes,
+            // bvh: build_bvh(&shapes, 0),
             is_background_sky: true,
         }
     }
 
     #[allow(dead_code)]
     pub fn three_spheres_hollow_glass() -> Scene {
+        let mat_diffuse0 = Arc::new(Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.8, 0.8, 0.0,
+                ))));
+        let mat_diffuse1 = Arc::new(Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.1, 0.2, 0.5,
+                ))));
+        let mat_dielectric0 = Arc::new(Material::Dielectric(MaterialDielectric::new(1.5)));
+        let mat_dielectric1 = Arc::new(Material::Dielectric(MaterialDielectric::new(1.0 / 1.5)));
+        let mat_metal = Arc::new(Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.6, 0.2), 1.0)));
+        let materials = vec![Arc::clone(&mat_diffuse0), Arc::clone(&mat_diffuse1), Arc::clone(&mat_dielectric0), Arc::clone(&mat_dielectric1), Arc::clone(&mat_metal)];
+
         let shapes = vec![
             // ground
             Shape::Sphere(Sphere::new(
                 Vec3F::new(0.0, -100.5, -1.0),
                 100.0,
-                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
-                    0.8, 0.8, 0.0,
-                ))),
+                Arc::clone(&mat_diffuse0)
             )),
             // center
             Shape::Sphere(Sphere::new(
                 Vec3F::new(0.0, 0.0, -1.2),
                 0.5,
-                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
-                    0.1, 0.2, 0.5,
-                ))),
+                Arc::clone(&mat_diffuse1)
             )),
             // left
             Shape::Sphere(Sphere::new(
                 Vec3F::new(-1.0, 0.0, -1.0),
                 0.5,
-                Material::Dielectric(MaterialDielectric::new(1.5)),
+                Arc::clone(&mat_dielectric0)
             )),
             // air bubble inside the left glass sphere
             Shape::Sphere(Sphere::new(
                 Vec3F::new(-1.0, 0.0, -1.0),
                 0.4,
-                Material::Dielectric(MaterialDielectric::new(1.0 / 1.5)),
+                Arc::clone(&mat_dielectric1)
             )),
             // right
             Shape::Sphere(Sphere::new(
                 Vec3F::new(1.0, 0.0, -1.0),
                 0.5,
-                Material::Metal(MaterialMetal::new(Color3F::new(0.8, 0.6, 0.2), 1.0)),
+                Arc::clone(&mat_metal)
             )),
         ];
 
         Self {
-            bvh: build_bvh(&shapes, 0),
+            materials,
             shapes,
+            // bvh: build_bvh(&shapes, 0),
             is_background_sky: true,
         }
     }
 
     #[allow(dead_code)]
     pub fn many_spheres() -> Scene {
+        let mat_diffuse0 = Arc::new(Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.5, 0.5, 0.5,
+                ))));
+        let mat_diffuse1 = Arc::new(Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.4, 0.2, 0.1,
+                ))));
+        let mat_dielectric = Arc::new(Material::Dielectric(MaterialDielectric::new(1.5)));
+        let mat_metal = Arc::new(Material::Metal(MaterialMetal::new(Color3F::new(0.7, 0.6, 0.5), 0.0)),);
+        let mut materials = vec![Arc::clone(&mat_diffuse0), Arc::clone(&mat_diffuse1), Arc::clone(&mat_dielectric), Arc::clone(&mat_metal)];
+
         let mut shapes = vec![
             // ground
             Shape::Sphere(Sphere::new(
                 Vec3F::new(0.0, -1000.0, 0.0),
                 1000.0,
-                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
-                    0.5, 0.5, 0.5,
-                ))),
+                Arc::clone(&mat_diffuse0)
             )),
             Shape::Sphere(Sphere::new(
                 Vec3F::new(0.0, 1.0, 0.0),
                 1.0,
-                Material::Dielectric(MaterialDielectric::new(1.5)),
+                Arc::clone(&mat_dielectric)
             )),
             Shape::Sphere(Sphere::new(
                 Vec3F::new(-4.0, 1.0, 0.0),
                 1.0,
-                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
-                    0.4, 0.2, 0.1,
-                ))),
+                Arc::clone(&mat_diffuse1)
             )),
             Shape::Sphere(Sphere::new(
                 Vec3F::new(4.0, 1.0, 0.0),
                 1.0,
-                Material::Metal(MaterialMetal::new(Color3F::new(0.7, 0.6, 0.5), 0.0)),
+                Arc::clone(&mat_metal)
             )),
         ];
 
@@ -351,10 +359,14 @@ impl Scene {
                             rand.gen_range(0.0..1.0),
                             rand.gen_range(0.0..1.0),
                         );
+                        let mat = Arc::new(Material::Diffuse(MaterialDiffuse::new_solid_color(albedo)));
+
+                        materials.push(Arc::clone(&mat));
+
                         shapes.push(Shape::Sphere(Sphere::new(
                             pos,
                             0.2,
-                            Material::Diffuse(MaterialDiffuse::new_solid_color(albedo)),
+                            Arc::clone(&mat)
                         )));
                     } else if choose_material < 0.9 {
                         let albedo = Color3F::new(
@@ -363,16 +375,20 @@ impl Scene {
                             rand.gen_range(0.5..1.0),
                         );
                         let fuzz = rand.gen_range(0.0..0.5);
+                        let mat = Arc::new(Material::Metal(MaterialMetal::new(albedo, fuzz)));
+
+                        materials.push(Arc::clone(&mat));
+
                         shapes.push(Shape::Sphere(Sphere::new(
                             pos,
                             0.2,
-                            Material::Metal(MaterialMetal::new(albedo, fuzz)),
+                            Arc::clone(&mat)
                         )));
                     } else {
                         shapes.push(Shape::Sphere(Sphere::new(
                             pos,
                             0.2,
-                            Material::Dielectric(MaterialDielectric::new(1.5)),
+                            Arc::clone(&mat_dielectric)
                         )));
                     }
                 }
@@ -380,123 +396,129 @@ impl Scene {
         }
 
         Self {
-            bvh: build_bvh(&shapes, 0),
+            materials,
             shapes,
+            // bvh: build_bvh(&shapes, 0),
             is_background_sky: true,
         }
     }
 
     #[allow(dead_code)]
     pub fn quads_example() -> Scene {
+        let mat_diffuse0 = Arc::new(Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    1.0, 0.2, 0.2,
+                ))));
+        let mat_diffuse1 = Arc::new(Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.2, 1.0, 0.2,
+                ))));
+        let mat_diffuse2 = Arc::new(Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.2, 0.2, 1.0,
+                ))));
+        let mat_diffuse3 = Arc::new(Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    1.0, 0.5, 0.0,
+                ))));
+        let mat_diffuse4 = Arc::new(Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
+                    0.2, 0.2, 0.8,
+                ))));
+        let materials = vec![Arc::clone(&mat_diffuse0), Arc::clone(&mat_diffuse1), Arc::clone(&mat_diffuse2), Arc::clone(&mat_diffuse3), Arc::clone(&mat_diffuse4), ];
+
         let shapes = vec![
             // left red
             Shape::Quad(Quad::new(
                 Vec3F::new(-3.0, -2.0, 5.0),
                 Vec3F::new(0.0, 0.0, -4.0),
                 Vec3F::new(0.0, 4.0, 0.0),
-                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
-                    1.0, 0.2, 0.2,
-                ))),
+                Arc::clone(&mat_diffuse0)
             )),
             // back green
             Shape::Quad(Quad::new(
                 Vec3F::new(-2.0, -2.0, 0.0),
                 Vec3F::new(4.0, 0.0, 0.0),
                 Vec3F::new(0.0, 4.0, 0.0),
-                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
-                    0.2, 1.0, 0.2,
-                ))),
+                Arc::clone(&mat_diffuse1)
             )),
             // right blue
             Shape::Quad(Quad::new(
                 Vec3F::new(3.0, -2.0, 1.0),
                 Vec3F::new(0.0, 0.0, 4.0),
                 Vec3F::new(0.0, 4.0, 0.0),
-                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
-                    0.2, 0.2, 1.0,
-                ))),
+                Arc::clone(&mat_diffuse2)
             )),
             // upper orange
             Shape::Quad(Quad::new(
                 Vec3F::new(-2.0, 3.0, 1.0),
                 Vec3F::new(4.0, 0.0, 0.0),
                 Vec3F::new(0.0, 0.0, 4.0),
-                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
-                    1.0, 0.5, 0.0,
-                ))),
+                Arc::clone(&mat_diffuse3)
             )),
             // lower teal
             Shape::Quad(Quad::new(
                 Vec3F::new(-2.0, -3.0, 5.0),
                 Vec3F::new(4.0, 0.0, 0.0),
                 Vec3F::new(0.0, 0.0, -4.0),
-                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
-                    0.2, 0.2, 0.8,
-                ))),
+                Arc::clone(&mat_diffuse4)
             )),
         ];
 
         Self {
-            bvh: build_bvh(&shapes, 0),
+            materials,
             shapes,
+            // bvh: build_bvh(&shapes, 0),
             is_background_sky: true,
         }
     }
 
     #[allow(dead_code)]
     pub fn cornell_box() -> Scene {
+        let mat_red = Arc::new(Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.64, 0.05, 0.05))));
+        let mat_white = Arc::new(Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.73, 0.73, 0.73))));
+        let mat_green = Arc::new(Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(0.12, 0.45, 0.15))));
+        let mat_light = Arc::new(Material::DiffuseLight(MaterialDiffuseLight::new(Color3F::new(15.0, 15.0, 15.0))));
+        let materials = vec![Arc::clone(&mat_red), Arc::clone(&mat_white), Arc::clone(&mat_green), Arc::clone(&mat_light)];
+
         let shapes = vec![
             Shape::Quad(Quad::new(
                 Vec3F::new(555.0, 0.0, 0.0),
                 Vec3F::new(0.0, 0.0, 555.0),
                 Vec3F::new(0.0, 555.0, 0.0),
-                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
-                    0.12, 0.45, 0.15,
-                ))),
+                Arc::clone(&mat_green)
             )),
             Shape::Quad(Quad::new(
                 Vec3F::new(0.0, 0.0, 0.0),
                 Vec3F::new(0.0, 555.0, 0.0),
                 Vec3F::new(0.0, 0.0, 555.0),
-                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
-                    0.64, 0.05, 0.05,
-                ))),
+                Arc::clone(&mat_red)
             )),
             Shape::Quad(Quad::new(
                 Vec3F::new(343.0, 554.0, 332.0),
                 Vec3F::new(-130.0, 0.0, 0.0),
                 Vec3F::new(0.0, 0.0, -105.0),
-                Material::DiffuseLight(MaterialDiffuseLight::new(Color3F::new(15.0, 15.0, 15.0))),
+                Arc::clone(&mat_light)
             )),
             Shape::Quad(Quad::new(
                 Vec3F::new(0.0, 0.0, 0.0),
                 Vec3F::new(0.0, 0.0, 555.0),
                 Vec3F::new(555.0, 0.0, 0.0),
-                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
-                    0.73, 0.73, 0.73,
-                ))),
+                Arc::clone(&mat_white)
             )),
             Shape::Quad(Quad::new(
                 Vec3F::new(555.0, 555.0, 555.0),
                 Vec3F::new(-555.0, 0.0, 0.0),
                 Vec3F::new(0.0, 0.0, -555.0),
-                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
-                    0.73, 0.73, 0.73,
-                ))),
+                Arc::clone(&mat_white)
             )),
             Shape::Quad(Quad::new(
                 Vec3F::new(0.0, 0.0, 555.0),
                 Vec3F::new(0.0, 555.0, 0.0),
                 Vec3F::new(555.0, 0.0, 0.0),
-                Material::Diffuse(MaterialDiffuse::new_solid_color(Color3F::new(
-                    0.73, 0.73, 0.73,
-                ))),
+                Arc::clone(&mat_white)
             )),
         ];
 
         Self {
-            bvh: build_bvh(&shapes, 0),
+            materials,
             shapes,
+            // bvh: build_bvh(&shapes, 0),
             is_background_sky: false,
         }
     }
@@ -536,7 +558,7 @@ impl Scene {
             t: Fp::MAX,
             ..Default::default()
         };
-        let mut nearest_material: Option<&Material> = None;
+        let mut nearest_material: Option<Arc<Material>> = None;
 
         for shape in self.shapes.iter() {
             let limits = 0.001..Fp::MAX;
@@ -570,6 +592,7 @@ impl Scene {
         color
     }
 
+    /*
     pub fn trace_bvh<R: rand::Rng>(&self, ray: &Ray, rand: &mut R, depth: u32) -> Color3F {
         if depth > Self::TRACE_MAX_DEPTH {
             return Color3F::zero();
@@ -596,6 +619,7 @@ impl Scene {
 
         color
     }
+    */
 }
 
 unsafe impl Send for Scene {}

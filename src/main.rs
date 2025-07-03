@@ -61,7 +61,7 @@ fn trace_row<R: rand::Rng>(
 fn main() {
     const IMAGE_WIDTH: u32 = 1200;
     const IMAGE_HEIGHT: u32 = 800;
-    const PIXEL_SAMPLE_SIZE: usize = 100;
+    const PIXEL_SAMPLE_SIZE: usize = 400;
 
     let image = Mutex::new(Image::new(IMAGE_WIDTH, IMAGE_HEIGHT));
 
@@ -95,11 +95,13 @@ fn main() {
 
         let progress_thread = s.spawn(move || loop {
             let rows_traced = rows_traced.load(atomic::Ordering::Relaxed);
+            
             print!(
                 "\rtrace progress: {:.2}%",
                 (rows_traced as Fp) / (IMAGE_HEIGHT as Fp) * 100.0
             );
             stdout().flush().unwrap();
+            
             if rows_traced == IMAGE_HEIGHT {
                 break;
             }

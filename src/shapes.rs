@@ -2,6 +2,7 @@ use crate::materials::Material;
 use crate::types::Fp;
 use crate::vecmath::{cross, dot, Vec3F};
 use std::ops::{Range, RangeInclusive};
+use std::sync::Arc;
 
 #[cfg(not(feature = "use-f64"))]
 use std::f32::consts::PI;
@@ -35,7 +36,7 @@ pub struct RayIntersection {
 pub struct Sphere {
     pub position: Vec3F,
     pub radius: Fp,
-    pub material: Material,
+    pub material: Arc<Material>,
 }
 
 pub struct Quad {
@@ -44,7 +45,7 @@ pub struct Quad {
     pub normal: Vec3F,
     pub w: Vec3F,
     pub d: Fp,
-    pub material: Material,
+    pub material: Arc<Material>,
 }
 
 #[derive(Copy, Clone)]
@@ -74,7 +75,7 @@ impl Ray {
 }
 
 impl Sphere {
-    pub fn new(position: Vec3F, radius: Fp, material: Material) -> Sphere {
+    pub fn new(position: Vec3F, radius: Fp, material: Arc<Material>) -> Sphere {
         Sphere {
             position,
             radius,
@@ -146,7 +147,7 @@ impl Sphere {
 }
 
 impl Quad {
-    pub fn new(corner: Vec3F, edge0: Vec3F, edge1: Vec3F, material: Material) -> Self {
+    pub fn new(corner: Vec3F, edge0: Vec3F, edge1: Vec3F, material: Arc<Material>) -> Self {
         let n = cross(&edge0, &edge1);
         let n_len_sqr = n.length_squared();
         let normal = n / n_len_sqr.sqrt();
@@ -326,10 +327,10 @@ impl Shape {
         }
     }
 
-    pub fn get_material(&self) -> &Material {
+    pub fn get_material(&self) -> Arc<Material> {
         match self {
-            Shape::Sphere(s) => &s.material,
-            Shape::Quad(q) => &q.material,
+            Shape::Sphere(s) => Arc::clone(&s.material),
+            Shape::Quad(q) => Arc::clone(&q.material),
         }
     }
 }
