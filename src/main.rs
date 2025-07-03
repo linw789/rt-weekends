@@ -95,13 +95,13 @@ fn main() {
 
         let progress_thread = s.spawn(move || loop {
             let rows_traced = rows_traced.load(atomic::Ordering::Relaxed);
-            
+
             print!(
                 "\rtrace progress: {:.2}%",
                 (rows_traced as Fp) / (IMAGE_HEIGHT as Fp) * 100.0
             );
             stdout().flush().unwrap();
-            
+
             if rows_traced == IMAGE_HEIGHT {
                 break;
             }
@@ -132,8 +132,8 @@ fn main() {
 
                 // Stratified samples.
                 // Divide the pixel into a sqrt_spp by sqrt_spp grid. Pixl a sample point in each
-                // grid cell. 
-                // Assume the pixel has the size [0,0] to [1.0,1.0]. 
+                // grid cell.
+                // Assume the pixel has the size [0,0] to [1.0,1.0].
                 let sqrt_spp_u32 = sqrt_spp as u32;
                 let mut pixel_samples: Vec<(Fp, Fp)> = Vec::new();
                 pixel_samples.reserve((sqrt_spp_u32 * sqrt_spp_u32) as usize);
@@ -141,12 +141,10 @@ fn main() {
                 let mut sj = 0.0;
                 while si < sqrt_spp {
                     while sj < sqrt_spp {
-                        pixel_samples.push(
-                            (
-                                rand.gen_range((si * inv_sqrt_spp)..((si + 1.0) * inv_sqrt_spp)),
-                                rand.gen_range((sj * inv_sqrt_spp)..((sj + 1.0) * inv_sqrt_spp))
-                            )
-                        );
+                        pixel_samples.push((
+                            rand.gen_range((si * inv_sqrt_spp)..((si + 1.0) * inv_sqrt_spp)),
+                            rand.gen_range((sj * inv_sqrt_spp)..((sj + 1.0) * inv_sqrt_spp)),
+                        ));
                         sj += 1.0;
                     }
                     si += 1.0;
