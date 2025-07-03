@@ -699,5 +699,3 @@ impl Scene {
     */
 }
 
-unsafe impl Send for Scene {}
-unsafe impl Sync for Scene {}
