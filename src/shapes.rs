@@ -33,12 +33,14 @@ pub struct RayIntersection {
     pub v: Fp,
 }
 
+#[derive(Clone)]
 pub struct Sphere {
     pub position: Vec3F,
     pub radius: Fp,
     pub material: Arc<Material>,
 }
 
+#[derive(Clone)]
 pub struct Quad {
     pub corner: Vec3F,
     pub edges: [Vec3F; 2],
@@ -53,6 +55,7 @@ pub struct Aabb {
     bounds: [Vec3F; 2], // [min, max]
 }
 
+#[derive(Clone)]
 pub enum Shape {
     Sphere(Sphere),
     Quad(Quad),
@@ -200,6 +203,26 @@ impl Quad {
 
         intersection
     }
+}
+
+pub fn create_box_quads(corner_a: Vec3F, corner_b: Vec3F, material: Arc<Material>) -> [Shape; 6] {
+    let min = Vec3F::new(Fp::min(corner_a.x, corner_b.x), Fp::min(corner_a.y, corner_b.y), Fp::min(corner_a.z, corner_b.z));
+    let max = Vec3F::new(Fp::max(corner_a.x, corner_b.x), Fp::max(corner_a.y, corner_b.y), Fp::max(corner_a.z, corner_b.z));
+
+    let dx = Vec3F::new(max.x - min.x, 0.0, 0.0);
+    let dy = Vec3F::new(0.0, max.y - min.y, 0.0);
+    let dz = Vec3F::new(0.0, 0.0, max.z - min.z);
+
+    // We use right-handed coordinate system. Make sure the normal of each is pointing
+    // outside the box.
+    [
+        Shape::Quad(Quad::new(Vec3F::new(min.x, min.y, max.z),  dx,  dy, Arc::clone(&material))), // front
+        Shape::Quad(Quad::new(Vec3F::new(max.x, min.y, max.z), -dz,  dy, Arc::clone(&material))), // right
+        Shape::Quad(Quad::new(Vec3F::new(max.x, min.y, min.z), -dx,  dy, Arc::clone(&material))), // back
+        Shape::Quad(Quad::new(Vec3F::new(min.x, min.y, min.z),  dz,  dy, Arc::clone(&material))), // left
+        Shape::Quad(Quad::new(Vec3F::new(min.x, max.y, max.z),  dx, -dz, Arc::clone(&material))), // top
+        Shape::Quad(Quad::new(Vec3F::new(min.x, min.y, min.z),  dx,  dz, Arc::clone(&material))), // bottom
+    ]
 }
 
 impl Aabb {

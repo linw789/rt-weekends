@@ -2,7 +2,7 @@ use crate::camera::Camera;
 use crate::materials::{
     Material, MaterialDielectric, MaterialDiffuse, MaterialDiffuseLight, MaterialMetal,
 };
-use crate::shapes::{Aabb, Quad, Ray, RayIntersection, Shape, Sphere};
+use crate::shapes::{Aabb, Quad, Ray, RayIntersection, Shape, Sphere, create_box_quads};
 use crate::types::Fp;
 use crate::vecmath::{Color3F, Vec3F};
 use rand::{rngs::SmallRng, Rng, SeedableRng};
@@ -553,7 +553,7 @@ impl Scene {
             Arc::clone(&mat_light),
         ];
 
-        let shapes = vec![
+        let mut shapes = vec![
             Shape::Quad(Quad::new(
                 Vec3F::new(555.0, 0.0, 0.0),
                 Vec3F::new(0.0, 0.0, 555.0),
@@ -591,6 +591,10 @@ impl Scene {
                 Arc::clone(&mat_white),
             )),
         ];
+        let box0 = create_box_quads(Vec3F::new(130.0, 0.0, 65.0), Vec3F::new(295.0, 165.0, 230.0), Arc::clone(&mat_white));
+        shapes.extend_from_slice(&box0);
+        let box1 = create_box_quads(Vec3F::new(265.0, 0.0, 295.0), Vec3F::new(430.0, 330.0, 460.0), Arc::clone(&mat_white));
+        shapes.extend_from_slice(&box1);
 
         Self {
             materials,
