@@ -124,14 +124,14 @@ fn main() {
             let camera = &camera;
 
             trace_threads.push(s.spawn(move || {
-                let sqrt_spp = (PIXEL_SAMPLE_SIZE as Fp).sqrt(); // square root of number of samples per pixel
-                let pixel_samples_scale = 1.0 / (sqrt_spp * sqrt_spp);
+                let pixel_samples_scale = 1.0 / PIXEL_SAMPLE_SIZE as Fp;
+                let sqrt_spp = (PIXEL_SAMPLE_SIZE as Fp).sqrt(); // square root of number of samples per pixel (spp)
                 let inv_sqrt_spp = 1.0 / sqrt_spp;
 
                 let mut rand = SmallRng::seed_from_u64(1317);
 
                 // Stratified samples.
-                // Divide the pixel into a sqrt_spp by sqrt_spp grid. Pixl a sample point in each
+                // Divide the pixel into a sqrt_spp by sqrt_spp grid. Pick a sample point in each
                 // grid cell.
                 // Assume the pixel has the size [0,0] to [1.0,1.0].
                 let sqrt_spp_u32 = sqrt_spp as u32;
@@ -141,13 +141,13 @@ fn main() {
                 let mut sj = 0.0;
                 while si < sqrt_spp {
                     while sj < sqrt_spp {
-                        pixel_samples.push((
-                            rand.gen_range((si * inv_sqrt_spp)..((si + 1.0) * inv_sqrt_spp)),
-                            rand.gen_range((sj * inv_sqrt_spp)..((sj + 1.0) * inv_sqrt_spp)),
-                        ));
+                        let rx = rand.gen_range((si * inv_sqrt_spp)..((si + 1.0) * inv_sqrt_spp));
+                        let ry = rand.gen_range((sj * inv_sqrt_spp)..((sj + 1.0) * inv_sqrt_spp));
+                        pixel_samples.push((rx, ry));
                         sj += 1.0;
                     }
                     si += 1.0;
+                    sj = 0.0;
                 }
 
                 let mut row_pixels: Vec<[u8; IMAGE_PIXEL_SIZE]> = vec![];
