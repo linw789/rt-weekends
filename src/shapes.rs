@@ -48,6 +48,9 @@ pub struct Quad {
     pub w: Vec3F,
     pub d: Fp,
     pub material: Arc<Material>,
+    pub translate: Vec3F,
+    pub rot_y_sin: Fp,
+    pub rot_y_cos: Fp,
 }
 
 #[derive(Copy, Clone)]
@@ -150,12 +153,20 @@ impl Sphere {
 }
 
 impl Quad {
-    pub fn new(corner: Vec3F, edge0: Vec3F, edge1: Vec3F, material: Arc<Material>) -> Self {
+    pub fn new(
+        corner: Vec3F,
+        edge0: Vec3F,
+        edge1: Vec3F,
+        material: Arc<Material>,
+        translate: Vec3F,
+        rot_y_degree: Fp,
+    ) -> Self {
         let n = cross(&edge0, &edge1);
         let n_len_sqr = n.length_squared();
         let normal = n / n_len_sqr.sqrt();
         let w = n / n_len_sqr;
         let d = dot(&normal, &corner);
+        let (rot_y_sin, rot_y_cos) = Fp::sin_cos(rot_y_degree / 180.0 * PI);
         Self {
             corner,
             edges: [edge0, edge1],
@@ -163,6 +174,9 @@ impl Quad {
             w,
             d,
             material,
+            translate,
+            rot_y_sin,
+            rot_y_cos,
         }
     }
 
@@ -170,11 +184,33 @@ impl Quad {
         self.corner + self.edges[0] + self.edges[1]
     }
 
+    fn rotate_y(&self, v: Vec3F) -> Vec3F {
+        Vec3F::new(
+            self.rot_y_cos * v.x + self.rot_y_sin * v.z,
+            v.y,
+            -self.rot_y_sin * v.x + self.rot_y_cos * v.z,
+        )
+    }
+
+    fn reverse_rotate_y(&self, v: Vec3F) -> Vec3F {
+        Vec3F::new(
+            self.rot_y_cos * v.x - self.rot_y_sin * v.z,
+            v.y,
+            self.rot_y_sin * v.x + self.rot_y_cos * v.z,
+        )
+    }
+
     pub fn ray_intersect(&self, ray: &Ray, limits: &Range<Fp>) -> RayIntersection {
         let mut intersection = RayIntersection {
             hit: false,
             ..Default::default()
         };
+
+        // Transform ray from world space to object space.
+        let ray = Ray::new(
+            self.reverse_rotate_y(ray.origin - self.translate),
+            self.reverse_rotate_y(ray.direction),
+        );
 
         let denominator = dot(&self.normal, &ray.direction);
         if Fp::abs(denominator) > 1e-8 {
@@ -188,12 +224,17 @@ impl Quad {
                 let beta = dot(&self.w, &cross(&self.edges[0], &corner_to_hit_point));
                 let unit_interval = RangeInclusive::new(0.0, 1.0);
                 if unit_interval.contains(&alpha) && unit_interval.contains(&beta) {
+                    // Rotate hit point around Y-axis (transform hit point from object space to
+                    // world space).
+                    let hit_point = self.rotate_y(hit_point) + self.translate;
+                    let normal = self.rotate_y(self.normal);
+
                     intersection = RayIntersection {
                         hit: true,
                         t,
                         is_normal_outward: false,
                         hit_point,
-                        normal: self.normal,
+                        normal,
                         u: alpha,
                         v: beta,
                     }
@@ -205,9 +246,23 @@ impl Quad {
     }
 }
 
-pub fn create_box_quads(corner_a: Vec3F, corner_b: Vec3F, material: Arc<Material>) -> [Shape; 6] {
-    let min = Vec3F::new(Fp::min(corner_a.x, corner_b.x), Fp::min(corner_a.y, corner_b.y), Fp::min(corner_a.z, corner_b.z));
-    let max = Vec3F::new(Fp::max(corner_a.x, corner_b.x), Fp::max(corner_a.y, corner_b.y), Fp::max(corner_a.z, corner_b.z));
+pub fn create_box_quads(
+    corner_a: Vec3F,
+    corner_b: Vec3F,
+    material: Arc<Material>,
+    translate: Vec3F,
+    rot_y_degree: Fp,
+) -> [Shape; 6] {
+    let min = Vec3F::new(
+        Fp::min(corner_a.x, corner_b.x),
+        Fp::min(corner_a.y, corner_b.y),
+        Fp::min(corner_a.z, corner_b.z),
+    );
+    let max = Vec3F::new(
+        Fp::max(corner_a.x, corner_b.x),
+        Fp::max(corner_a.y, corner_b.y),
+        Fp::max(corner_a.z, corner_b.z),
+    );
 
     let dx = Vec3F::new(max.x - min.x, 0.0, 0.0);
     let dy = Vec3F::new(0.0, max.y - min.y, 0.0);
@@ -216,12 +271,54 @@ pub fn create_box_quads(corner_a: Vec3F, corner_b: Vec3F, material: Arc<Material
     // We use right-handed coordinate system. Make sure the normal of each is pointing
     // outside the box.
     [
-        Shape::Quad(Quad::new(Vec3F::new(min.x, min.y, max.z),  dx,  dy, Arc::clone(&material))), // front
-        Shape::Quad(Quad::new(Vec3F::new(max.x, min.y, max.z), -dz,  dy, Arc::clone(&material))), // right
-        Shape::Quad(Quad::new(Vec3F::new(max.x, min.y, min.z), -dx,  dy, Arc::clone(&material))), // back
-        Shape::Quad(Quad::new(Vec3F::new(min.x, min.y, min.z),  dz,  dy, Arc::clone(&material))), // left
-        Shape::Quad(Quad::new(Vec3F::new(min.x, max.y, max.z),  dx, -dz, Arc::clone(&material))), // top
-        Shape::Quad(Quad::new(Vec3F::new(min.x, min.y, min.z),  dx,  dz, Arc::clone(&material))), // bottom
+        Shape::Quad(Quad::new(
+            Vec3F::new(min.x, min.y, max.z),
+            dx,
+            dy,
+            Arc::clone(&material),
+            translate,
+            rot_y_degree,
+        )), // front
+        Shape::Quad(Quad::new(
+            Vec3F::new(max.x, min.y, max.z),
+            -dz,
+            dy,
+            Arc::clone(&material),
+            translate,
+            rot_y_degree,
+        )), // right
+        Shape::Quad(Quad::new(
+            Vec3F::new(max.x, min.y, min.z),
+            -dx,
+            dy,
+            Arc::clone(&material),
+            translate,
+            rot_y_degree,
+        )), // back
+        Shape::Quad(Quad::new(
+            Vec3F::new(min.x, min.y, min.z),
+            dz,
+            dy,
+            Arc::clone(&material),
+            translate,
+            rot_y_degree,
+        )), // left
+        Shape::Quad(Quad::new(
+            Vec3F::new(min.x, max.y, max.z),
+            dx,
+            -dz,
+            Arc::clone(&material),
+            translate,
+            rot_y_degree,
+        )), // top
+        Shape::Quad(Quad::new(
+            Vec3F::new(min.x, min.y, min.z),
+            dx,
+            dz,
+            Arc::clone(&material),
+            translate,
+            rot_y_degree,
+        )), // bottom
     ]
 }
 
