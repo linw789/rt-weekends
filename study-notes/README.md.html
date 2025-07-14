@@ -35,7 +35,7 @@ R^\prime_\perp = \dfrac{\eta}{\eta^\prime} (R - (R \cdot n)n) \\
 R^\prime_\parallel = \sqrt{|R|^2 - |R^\prime_\perp|^2} (-n)
 $$
 
-## Black Sport at the Bottom of Dielectric Sphere
+## Black Spot at the Bottom of Dielectric Sphere
 
 [<img src="images/dieletric-bottom-black-spot.png" width="400"/>](images/dieletric-bottom-black-spot.png)
 
@@ -59,5 +59,53 @@ let intersection = sphere.ray_intercept(ray, &limits);
 When tracing a ray from viewing plane to a glass object, the ray hitting the glass object is actually the 
 refracted ray in real life, and the refracted ray that we calcuate is the incident ray in real life.
 According to the reversibility principle of light, this is fine.
+
+# Why does stratifying the samples help mitigate the curse of dimensionality problem in Monte Carlo algorithm?
+
+# Why finding half sum, instead of half area, works for finding halfway point?
+
+In the section 3.5 of the third book, to find the halfway point h where values [0, h) and [h, 2pi) have the same 
+probability of 50%, the author uses the following code: 
+
+```cpp
+// Sort the samples by x.
+std::sort(std::begin(samples), std::end(samples), compare_by_x);
+
+// Find out the sample at which we have half of our area.
+double half_sum = sum / 2.0;
+double halfway_point = 0.0;
+double accum = 0.0;
+for (unsigned int i = 0; i < N; i++) {
+    accum += samples[i].p_x;
+    if (accum >= half_sum) {
+        halfway_point = samples[i].x;
+        break;
+    }
+}
+```
+
+Notice, `accum` accumulates `p_x` which is the result of pdf(x), which is NOT the area. Originally I thought 
+code `accum` should accumulates the area as below:
+
+```cpp
+double half_area = ((2*pi / N) * sum) / 2.0;// re-arranged from (2*pi * sum / N) / 2.0
+for (unsigned int i = 0; i < N; i++) {
+    double accum = 0.0;
+    for (unsigned int j = 0; j < (i + 1): j++) {
+       accum += samples[j].p_x;
+    }
+    double partial_area = (x / (i + 1)) * accum; // re-arranged from (x - 0.0) * accum / (i + 1)
+    if (partial_area >= half_area) {
+       halfway_point = samples[i].x;
+       break
+    }
+}
+```
+
+The result from the second code snippet is the same as the one from the first.
+
+The reason the first code works is because the samples generated are uniformly distributed. This means that 
+the samples can be considered equally spaced over [0.0, 2pi]. In another words, `x / (i + 1)` in the second
+code snippet equals `2*pi / N`, which is a constant and can be cancelled out.
 
 <!-- Markdeep: --><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js" charset="utf-8"></script><script src="https://morgan3d.github.io/markdeep/latest/markdeep.min.js" charset="utf-8"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
