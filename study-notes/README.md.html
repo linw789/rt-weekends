@@ -121,11 +121,11 @@ Say we have 100 monotonically increasing numbers uniformly distributed in [0, 1]
 x_{99}$. In our case, this basically means that these numbers are more or less 0.01, 0.02, ..., 1.0.
 
 Now say we find a mapping that maps $x_i$ to $y_i$ over [a, b] where $y_i$ is also _monotonically
-increasing_ and its distribution is defined by the pdf(y). Given pdf(y), we know its cdf(y). By
-definition, this means that the probability of numbers in [a, $y_0$] is $cdf(y_0)$. Empirically, 
+increasing_ and its distribution is defined by a pdf(y). Given the pdf(y), we know its cdf(y). By
+definition, the probability of numbers that fall in [a, $y_0$] is $cdf(y_0)$. Empirically, 
 we know that the probability of numbers in [a, $y_0$] is 1/100 (because $y_i$ is monotonically
 increasing). Similarly, the theoretical probability of numbers in [a, $y_1$] is $cdf(y_1)$, and
-the empirical probability is 2/100 (because $(y_0, y_1) \leq y_1$).
+the empirical probability is 2/100, because $(y_0, y_1) \leq y_1$.
 
 Notice, 1/100, 2/100 are exactly $x_0$ and $x_1$. So $cdf(y_0) = x_0 \to cdf^{-1}(x_0) = y_0$,
 $cdf(y_1) = x_1 \to cdf^{-1}(x_1) = y_1$.
@@ -152,5 +152,32 @@ get $f(0.01)$, $f(0.02)$, $f(0.03)$, $f(0.04)$ ... And because the PDF specified
 expect that 25 calls of these 100 would result in values smaller than (or equal to) 1.0. Because $f(d)$
 monotonically increases, if $f(0.25)=1.1$, then it's possible that $f(0.24)=1.05$. But this would result in
 fewer than 25 values smaller than 1. By the same logic, $f(0.25)\ne 0.9$.
+
+Importance Sampling
+===============================================================================
+
+Suppose we have a group of cherry trees with its height distribution as the following:
+
+height | 60 | 65 | 70 | 75 | 80 | 85
+-------|----|----|----|----|----|---
+size   | 3  | 3  | 8  | 10 | 5  | 2
+
+The expected height of this group of cherry trees is:
+
+\begin{align*}
+E &= \frac{60\cdot3 + 65\cdot3 + 70\cdot8 + 75\cdot10 + 80\cdot5 + 85\cdot2}{3 + 3 + 8 + 10 + 5 + 2} \\
+  &= 60\cdot\frac{3}{31} + 65\cdot\frac{3}{31} + 70\cdot\frac{8}{31} + 75\cdot\frac{10}{31} + 80\cdot\frac{5}{31} + 85\cdot\frac{2}{31}
+\end{align*}
+
+The above computes the expected value by summing each discrete value multiplied by its density in the group.
+For a range of continuous values, we need to know the distribution of the values (defined by a PDF) and use
+integral to calculate the expected value:
+
+$$ E = \int_a^b x\cdot p(x)\,dx $$
+
+Similarly, to calculate the expected value of f(x) where x falls in the continuous range and is distributed 
+by a PDF p(x):
+
+$$ E = \int_a^b f(x)\cdot p(x)\,dx $$
 
 <!-- Markdeep: --><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js" charset="utf-8"></script><script src="https://morgan3d.github.io/markdeep/latest/markdeep.min.js" charset="utf-8"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
