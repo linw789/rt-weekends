@@ -166,7 +166,8 @@ The expected height of this group of cherry trees is:
 
 \begin{align*}
 E &= \frac{60\cdot3 + 65\cdot3 + 70\cdot8 + 75\cdot10 + 80\cdot5 + 85\cdot2}{3 + 3 + 8 + 10 + 5 + 2} \\
-  &= 60\cdot\frac{3}{31} + 65\cdot\frac{3}{31} + 70\cdot\frac{8}{31} + 75\cdot\frac{10}{31} + 80\cdot\frac{5}{31} + 85\cdot\frac{2}{31}
+  &= 60\cdot\frac{3}{31} + 65\cdot\frac{3}{31} + 70\cdot\frac{8}{31} + 75\cdot\frac{10}{31} + 80\cdot\frac{5}{31} + 85\cdot\frac{2}{31} \\
+  &= 72.74193548387096
 \end{align*}
 
 The above computes the expected value by summing each discrete value multiplied by its density in the group.
@@ -175,9 +176,35 @@ integral to calculate the expected value:
 
 $$ E = \int_a^b x\cdot p(x)\,dx $$
 
-Similarly, to calculate the expected value of f(x) where x falls in the continuous range and is distributed 
-by a PDF p(x):
+Similarly, to calculate the expected value of f(x) where x falls in the continuous range [a, b] with a PDF p(x):
 
 $$ E = \int_a^b f(x)\cdot p(x)\,dx $$
+
+## What if we don't know the distribution?
+
+Take the cherry trees example again. Let's suppose we don't know the distriubtion, but only the lower and
+upper bounds, namely [60, 85]. To compute the expected height, we can similarly pick 31 numbers but with 
+uniform distribution. The equal space between the picked numbers is: d=(85-60)/(31-1). The expected value is:
+
+$$ E = ((60 + 0d) + (60 + 1d) + ... + (60 + 30d)) / 31 = 72.5 $$
+
+The PDF $p(x)$ for the uniform distribution over the range [60, 85] can be found as follows:
+\begin{equation}
+\int_{60}^{85} a\,dx = 1 \to a = 1/25 \to p(x) = 1/25 \nonumber
+\end{equation}
+
+So the expected value of the continuous range of [60, 85] with uniform distribution is:
+
+$$ \int_{60}^{85} x\cdot p(x)\,dx = \int_{60}^{85} \frac{1}{25}x\,dx = 72.5 $$
+
+## Transform integration problem to expected value problem
+
+$$ \int_a^b f(x)\, dx = \int_a^b \frac{f(x)}{p(x)}p(x)\, dx $$
+
+Now we can approximate the expected value of $\frac{f(x)}{p(x)}$ by importance sampling:
+
+$$ \mathbb{E}[\frac{f(x)}{p(x)}] = \frac{1}{N} \sum_{i=1}^{n} \frac{f(x_i)}{p(x_i)} $$
+
+
 
 <!-- Markdeep: --><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js" charset="utf-8"></script><script src="https://morgan3d.github.io/markdeep/latest/markdeep.min.js" charset="utf-8"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
