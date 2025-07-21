@@ -207,4 +207,18 @@ p(x). The book gives an example of estimating $\int_0^2 x^2\; dx$, and find a $p
 $\frac{f(x)}{p(x)}=\frac{8}{3}$. However, in this case, we already know how to integrate f(x) analytically, the 
 process of finding the perfect p(x) _is_ the same calculation as integration of f(x).
 
+So the goal is to pick a p(x) whose shape resembles that of f(x), resulting in $\frac{f(x)}{p(x)}$ with a shape
+close to a flat line.
+
+Monte Carlo Integration on the Sphere of Directions
+===============================================================================
+
+Integrating $f(\theta, \phi) = cos^2(\theta)$ over the surface of the unit sphere. Even though $\phi$ doesn't
+affect the function, we still need to take it into account when integrating:
+
+$$ \int_{0}^{2\pi} \int_{0}^{\pi} cos^2(\theta) u(\theta, \phi) d\theta d\phi $$
+
+Where $u(\theta, \phi)$ is the differential area on the surface of the unit sphere. ChatGPT agrees that the 
+result if $\frac{4}{3}\pi$.
+
 <!-- Markdeep: --><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js" charset="utf-8"></script><script src="https://morgan3d.github.io/markdeep/latest/markdeep.min.js" charset="utf-8"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
