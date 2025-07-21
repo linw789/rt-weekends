@@ -153,58 +153,58 @@ expect that 25 calls of these 100 would result in values smaller than (or equal 
 monotonically increases, if $f(0.25)=1.1$, then it's possible that $f(0.24)=1.05$. But this would result in
 fewer than 25 values smaller than 1. By the same logic, $f(0.25)\ne 0.9$.
 
-Importance Sampling
+Monte Carlo estimation
 ===============================================================================
 
 Suppose we have a group of cherry trees with its height distribution as the following:
 
-height | 60 | 65 | 70 | 75 | 80 | 85
--------|----|----|----|----|----|---
-size   | 3  | 3  | 8  | 10 | 5  | 2
+height | 60 | 65 | 70 | 75 | 80 | 85 | total
+-------|----|----|----|----|----|-----------
+size   | 30 | 30 | 80 | 100| 50 | 20 | 310
 
-The expected height of this group of cherry trees is:
+Suppose we are only allowed to pick 10 samples, we can pick our samples based on the given discrete 
+distribution:
+
+$$ 10*30/310 \approx 1, 10*30/310 \approx 1, 10*80/310 \approx 3, 10*100/310 \approx 3, 10*50/310 \approx 2, 10*20/310 \approx 1 $$
 
 \begin{align*}
-E &= \frac{60\cdot3 + 65\cdot3 + 70\cdot8 + 75\cdot10 + 80\cdot5 + 85\cdot2}{3 + 3 + 8 + 10 + 5 + 2} \\
-  &= 60\cdot\frac{3}{31} + 65\cdot\frac{3}{31} + 70\cdot\frac{8}{31} + 75\cdot\frac{10}{31} + 80\cdot\frac{5}{31} + 85\cdot\frac{2}{31} \\
-  &= 72.74193548387096
+E &= \frac{1}{10}(60 + 65 + 70 + 70 + 70 + 75 + 75 + 75 + 80 + 80 + 85) \\
+  &= 80.5
 \end{align*}
 
-The above computes the expected value by summing each discrete value multiplied by its density in the group.
-For a range of continuous values, we need to know the distribution of the values (defined by a PDF) and use
-integral to calculate the expected value:
+In a continuous range [a, b], it's impossible to sum up all individual values in the range, so we similarly 
+pick a number of samples based on a given distribution.
 
-$$ E = \int_a^b x\cdot p(x)\,dx $$
+$$ I = \int_a^b x\cdot p(x)\,dx $$
 
-Similarly, to calculate the expected value of f(x) where x falls in the continuous range [a, b] with a PDF p(x):
+$p(x)$ is a probability density function. We can use Monte Carlo method to estimate the integral above:
 
-$$ E = \int_a^b f(x)\cdot p(x)\,dx $$
+$$ E = \frac{1}{N}\sum_{i=1}^{n} x_i \;| x_i \sim p(x) $$
 
-## What if we don't know the distribution?
+$x_i$ is randomly generated based on the distribution $p(x)$.
 
-Take the cherry trees example again. Let's suppose we don't know the distriubtion, but only the lower and
-upper bounds, namely [60, 85]. To compute the expected height, we can similarly pick 31 numbers but with 
-uniform distribution. The equal space between the picked numbers is: d=(85-60)/(31-1). The expected value is:
+Similarly, to estimate the expected value of f(x) where x falls in the continuous range [a, b] with a PDF p(x):
 
-$$ E = ((60 + 0d) + (60 + 1d) + ... + (60 + 30d)) / 31 = 72.5 $$
+$$ I = \int_a^b f(x)\cdot p(x)\,dx \approx E = \frac{1}{N}\sum_{i=1}^{n}x_i \;| x_i \sim p(x) $$
 
-The PDF $p(x)$ for the uniform distribution over the range [60, 85] can be found as follows:
-\begin{equation}
-\int_{60}^{85} a\,dx = 1 \to a = 1/25 \to p(x) = 1/25 \nonumber
-\end{equation}
-
-So the expected value of the continuous range of [60, 85] with uniform distribution is:
-
-$$ \int_{60}^{85} x\cdot p(x)\,dx = \int_{60}^{85} \frac{1}{25}x\,dx = 72.5 $$
+Importance Sampling
+===============================================================================
 
 ## Transform integration problem to expected value problem
 
 $$ \int_a^b f(x)\, dx = \int_a^b \frac{f(x)}{p(x)}p(x)\, dx $$
 
-Now we can approximate the expected value of $\frac{f(x)}{p(x)}$ by importance sampling:
+Now we can approximate the expected value of $\frac{f(x)}{p(x)}$ by the Monte Carlo method:
 
 $$ \mathbb{E}[\frac{f(x)}{p(x)}] = \frac{1}{N} \sum_{i=1}^{n} \frac{f(x_i)}{p(x_i)} $$
 
+Notice we can choose any p(x), as long as p(x) > 0 when f(x) != 0.
 
+Intuitively, we can see that the smaller the variance of $\frac{f(x)}{p(x)}$ the fewer sample count is needed
+to estimate. Because if the variance is small, every sample we pick will be similar. Taking this to an extreme:
+if $\frac{f(x)}{p(x)}$ is a constant, we need zero sample count. But it's most often impossible to find such 
+p(x). The book gives an example of estimating $\int_0^2 x^2\; dx$, and find a $p(x)=\frac{3}{8}x^2$ that makes
+$\frac{f(x)}{p(x)}=\frac{8}{3}$. However, in this case, we already know how to integrate f(x) analytically, the 
+process of finding the perfect p(x) _is_ the same calculation as integration of f(x).
 
 <!-- Markdeep: --><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js" charset="utf-8"></script><script src="https://morgan3d.github.io/markdeep/latest/markdeep.min.js" charset="utf-8"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
