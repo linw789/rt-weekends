@@ -225,8 +225,17 @@ The Scattering PDF
 ===============================================================================
 
 For Lambertian surface, the scattering PDF: $pScatter(x, w_i, w_o, \lambda) = C \cdot cos(\theta_o)$ should read:
-for a given outgoing ray direction, the directional distribution of the reflected direction over solid angle is
-determined by outgoing direction's angle relative to the surface normal. Even though there are two variables
-$\theta$ and $\phi$ in spherical coordinates, $\phi$ doesn't affect the probability of the reflected direction.
+regardless of incident direction, the wavelength of the light, or the scattering position, the directional
+distribution function of the reflected direction over solid angle is a function of the outgoing direction's angle
+relative to the surface normal. Even though there are two variables $\theta$ and $\phi$ in spherical coordinates,
+$\phi$ doesn't affect the probability of the reflected direction.
+
+Here the reflected direction is the incident direction because we are tracing rays from the pixels back to the
+light sources.
+
+## How could the probability distribution of the reflected (incident) direction depend on the incident direction?
+
+$pScatter(x, w_i, w_o, \lambda)$ describes the directional distribution of the reflected ray. But the reflected
+(incident) ray itself is also a variable input to this PDF. How could it be?
 
 <!-- Markdeep: --><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js" charset="utf-8"></script><script src="https://morgan3d.github.io/markdeep/latest/markdeep.min.js" charset="utf-8"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
