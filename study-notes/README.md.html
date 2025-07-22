@@ -216,9 +216,17 @@ Monte Carlo Integration on the Sphere of Directions
 Integrating $f(\theta, \phi) = cos^2(\theta)$ over the surface of the unit sphere. Even though $\phi$ doesn't
 affect the function, we still need to take it into account when integrating:
 
-$$ \int_{0}^{2\pi} \int_{0}^{\pi} cos^2(\theta) u(\theta, \phi) d\theta d\phi $$
+$$ \int_{0}^{2\pi} \int_{0}^{\pi} cos^2(\theta) dA \;| dA = sin(\theta) d\theta d\phi $$
 
-Where $u(\theta, \phi)$ is the differential area on the surface of the unit sphere. ChatGPT agrees that the 
-result if $\frac{4}{3}\pi$.
+$dA$ is the differential area on the surface of the unit sphere, similar to $dx$ in single-variable integral.
+ChatGPT agrees that the result is $\frac{4}{3}\pi$.
+
+The Scattering PDF
+===============================================================================
+
+For Lambertian surface, the scattering PDF: $pScatter(x, w_i, w_o, \lambda) = C \cdot cos(\theta_o)$ should read:
+for a given outgoing ray direction, the directional distribution of the reflected direction over solid angle is
+determined by outgoing direction's angle relative to the surface normal. Even though there are two variables
+$\theta$ and $\phi$ in spherical coordinates, $\phi$ doesn't affect the probability of the reflected direction.
 
 <!-- Markdeep: --><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js" charset="utf-8"></script><script src="https://morgan3d.github.io/markdeep/latest/markdeep.min.js" charset="utf-8"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
