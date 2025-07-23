@@ -238,4 +238,48 @@ light sources.
 $pScatter(x, w_i, w_o, \lambda)$ describes the directional distribution of the reflected ray. But the reflected
 (incident) ray itself is also a variable input to this PDF. How could it be?
 
+Generating Random Directions
+===============================================================================
+
+## Random Directions Relative to the Z Axis
+
+Generating a random direction is equivalent to picking a random point on the surface of unit sphere. Unlike
+integration in cartesian coordinates, the surface area element in spherical coordinates is: $dA = sin(\theta)d\theta d\phi$.
+The $sin(\theta)$ exists because the area per unit $\theta$ around the equator is larger than that around the poles
+(the circumference of the circle perpendicular to the z-axis is larger).
+
+So given a PDF $p(\theta, \phi)$, we can calculate the probability of a point falling in any area on the surface as: 
+
+$$ \int_{0}^{2\pi} \int_{0}^{\pi} p(\theta, \phi) sin(\theta) d\theta d\phi $$
+
+
+Say we have a random point generator under the distribution PDF $p(\theta, \phi) = f(\theta)$, we can get the 1D
+PDFs for both spherical coordinates $\theta$ and $\phi$. This is called [marginal distribution](https://en.wikipedia.org/wiki/Marginal_distribution). 
+To get 1D PDF of $\theta$, we sum joint probability (probability of a specific pair of $\theta$ and $\phi$) over
+all values of $\phi$.
+
+To get PDF $b(\theta)$:
+
+\begin{equation}
+b(\theta) = \int_{0}^{2\pi} p(w) \, sin(\theta) d\phi \nonumber \\
+p(w) = f(\theta) \\
+b(\theta) = \int_{0}^{2\pi} f(\theta) sin(\theta) \, d\phi \\
+\end{equation}
+
+Since $f(\theta)$ doesn't depend on $\phi$:
+
+$$ b(\theta) =  f(\theta) sin(\theta) \int_{0}^{2\pi} \, d\phi = 2\pi f(\theta)sin(\theta) $$
+
+To get PDF $a(\phi)$:
+
+$$ a(\phi) = \int_{0}^{\pi} f(\theta) \, sin(\theta) d\theta $$
+
+Because $f(\theta)$ and $sin(\theta)$ don't depend on $\phi$, $\int_{0}^{\pi} f(\theta) \, sin(\theta) d\theta$ is
+a constant C. We also know that the total probability of $a(\phi)$ is 1. We can calculate the constant as follows:
+
+\begin{equation}
+\int_{0}^{2\pi} a(\phi) \, d\phi = \int_{0}^{2\pi} C \, d\phi = 1 \nonumber \\
+C = \frac{1}{2\pi}
+\end{equation}
+
 <!-- Markdeep: --><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js" charset="utf-8"></script><script src="https://morgan3d.github.io/markdeep/latest/markdeep.min.js" charset="utf-8"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
