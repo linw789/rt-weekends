@@ -34,6 +34,14 @@ fn linear_to_gamma(color: &Color3F) -> Color3F {
     )
 }
 
+fn nan_to_zero(color: &Color3F) -> Color3F {
+    Color3F::new(
+        if color.x != color.x { 0.0 } else { color.x },
+        if color.y != color.y { 0.0 } else { color.y },
+        if color.z != color.z { 0.0 } else { color.z },
+    )
+}
+
 fn trace_row<R: rand::Rng>(
     scene: &Scene,
     camera: &Camera,
@@ -52,6 +60,7 @@ fn trace_row<R: rand::Rng>(
         }
 
         pixel_color = pixel_color * pixel_samples_scale;
+        pixel_color = nan_to_zero(&pixel_color);
         pixel_color = linear_to_gamma(&pixel_color);
 
         row_pixels[col] = Color3U8::from(pixel_color).into();
