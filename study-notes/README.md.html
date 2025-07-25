@@ -185,7 +185,7 @@ $x_i$ is randomly generated based on the distribution $p(x)$.
 
 Similarly, to estimate the expected value of f(x) where x falls in the continuous range [a, b] with a PDF p(x):
 
-$$ I = \int_a^b f(x)\cdot p(x)\,dx \approx E = \frac{1}{N}\sum_{i=1}^{n}x_i \;| x_i \sim p(x) $$
+$$ I = \int_a^b f(x)\cdot p(x)\,dx \approx E = \frac{1}{N}\sum_{i=1}^{n} f(x_i) \;| x_i \sim p(x) $$
 
 Importance Sampling
 ===============================================================================
@@ -208,7 +208,7 @@ $\frac{f(x)}{p(x)}=\frac{8}{3}$. However, in this case, we already know how to i
 process of finding the perfect p(x) _is_ the same calculation as integration of f(x).
 
 So the goal is to pick a p(x) whose shape resembles that of f(x), resulting in $\frac{f(x)}{p(x)}$ with a shape
-close to a flat line.
+close to a flat line (a constant value in the 2D case).
 
 Monte Carlo Integration on the Sphere of Directions
 ===============================================================================
@@ -244,13 +244,14 @@ Generating Random Directions
 ## Random Directions Relative to the Z Axis
 
 Generating a random direction is equivalent to picking a random point on the surface of unit sphere. Unlike
-integration in cartesian coordinates, the surface area element in spherical coordinates is: $dA = sin(\theta)d\theta d\phi$.
-The $sin(\theta)$ exists because the area per unit $\theta$ around the equator is larger than that around the poles
-(the circumference of the circle perpendicular to the z-axis is larger).
+integration in cartesian coordinates, the differential area on a surface in spherical coordinates is:
+$dA = sin(\theta)d\theta d\phi$. The $sin(\theta)$ exists because the area per unit $\theta$ around the equator
+is larger than that around the poles (the circumference of the circle perpendicular to the z-axis is larger).
 
-So given a PDF $p(\theta, \phi)$, we can calculate the probability of a point falling in any area on the surface as: 
+So given a PDF $p(\theta, \phi)$, we can calculate the probability of a point falling in a differential area
+on the surface as: 
 
-$$ \int_{0}^{2\pi} \int_{0}^{\pi} p(\theta, \phi) sin(\theta) d\theta d\phi $$
+$$ p(\theta, \phi) sin(\theta) d\theta d\phi $$
 
 
 Say we have a random point generator under the distribution PDF $p(\theta, \phi) = f(\theta)$, we can get the 1D
