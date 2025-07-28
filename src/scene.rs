@@ -688,8 +688,14 @@ impl Scene {
             let material = nearest_material.unwrap();
             let emission_color = material.emit();
             match material.scatter(ray, &nearest_intersection, rand) {
-                Some((scattered_ray, albedo)) => {
-                    albedo * self.trace(&scattered_ray, rand, depth + 1) + emission_color
+                Some(scattered) => {
+                    let scattering_pdf =
+                        material.scattering_pdf(&nearest_intersection.normal, &scattered.ray);
+                    let scatter_color = (scattered.albedo
+                        * scattering_pdf
+                        * self.trace(&scattered.ray, rand, depth + 1))
+                        / scattered.probability;
+                    scatter_color + emission_color
                 }
                 None => emission_color,
             }

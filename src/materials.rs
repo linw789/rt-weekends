@@ -1,8 +1,13 @@
 use crate::shapes::{Ray, RayIntersection};
 use crate::textures::{Texture, TextureChecker, TextureImage, TextureSolidColor};
 use crate::types::Fp;
-use crate::vecmath::{dot, Color3F, Vec3F};
+use crate::vecmath::{cross, dot, Color3F, Vec3F};
 use std::path::Path;
+
+#[cfg(not(feature = "use-f64"))]
+use std::f32::consts::PI;
+#[cfg(feature = "use-f64")]
+use std::f64::consts::PI;
 
 pub struct MaterialDiffuse {
     tex: Texture,
@@ -26,6 +31,12 @@ pub enum Material {
     Metal(MaterialMetal),
     Dielectric(MaterialDielectric),
     DiffuseLight(MaterialDiffuseLight),
+}
+
+pub struct ScatteredResult {
+    pub ray: Ray,
+    pub albedo: Color3F,
+    pub probability: Fp,
 }
 
 fn reflect(in_dir: &Vec3F, normal: &Vec3F) -> Vec3F {
@@ -65,39 +76,28 @@ impl MaterialDiffuse {
         &self,
         intersection: &RayIntersection,
         rand: &mut R,
-    ) -> Option<(Ray, Color3F)> {
-        // Pick a random point on a unit sphere.
-        let (rand_point, len_sqr) = loop {
-            let random_ray = Vec3F::random_fp_range(rand, -1.0..1.0);
-            let len_sqr = random_ray.length_squared();
-            if len_sqr <= 1.0 {
-                break (random_ray, len_sqr);
-            }
-        };
-        let rand_point = if len_sqr > 0.0 {
-            rand_point / Fp::sqrt(len_sqr)
-        } else {
-            rand_point
-        };
+    ) -> Option<ScatteredResult> {
+        let pdf = PdfCosineHemisphere::new();
+        let sample = pdf.gen_sample(rand);
 
-        // unit_sphere_center = hit_point + normal
-        // rand_sphere_point = rand_point + unit_sphere_center = rand_point + hit_point + normal
-        // scattered_ray = rand_sphere_point - hit_point = (rand_point + hit_point + normal) - hit_point = rand_point + normal
+        let scattered_ray = from_local_to_world_space(&intersection.normal, &sample.dir);
 
-        // Because `normal` always points to the opposite direction as the original intersecting
-        // ray, so does the `scattered_ray`.
-        let scattered_ray = rand_point + intersection.normal;
-        let scattered_ray = if scattered_ray.approx_zero() {
-            intersection.normal
-        } else {
-            scattered_ray
-        };
-
-        Some((
-            Ray::new(intersection.hit_point, scattered_ray),
-            self.tex
+        Some(ScatteredResult {
+            ray: Ray::new(intersection.hit_point, scattered_ray),
+            albedo: self
+                .tex
                 .value(intersection.u, intersection.v, intersection.hit_point),
-        ))
+            probability: sample.probability,
+        })
+    }
+
+    pub fn scattering_pdf(&self, surface_normal: &Vec3F, scattered_ray: &Ray) -> Fp {
+        let cos_theta = dot(surface_normal, &scattered_ray.direction.normalized());
+        if cos_theta < 0.0 {
+            0.0
+        } else {
+            cos_theta / PI
+        }
     }
 }
 
@@ -120,7 +120,7 @@ impl MaterialMetal {
         incident_ray: &Ray,
         intersection: &RayIntersection,
         rand: &mut R,
-    ) -> Option<(Ray, Color3F)> {
+    ) -> Option<ScatteredResult> {
         let reflected_dir = reflect(&incident_ray.direction, &intersection.normal);
 
         let random_unit_dir = loop {
@@ -136,7 +136,11 @@ impl MaterialMetal {
         // If the `scattered_ray` points to the opposite direction as `intersection.normal`,
         // discard it (as if the surface absorbs the `incident_ray`).
         if dot(&scattered_ray, &intersection.normal) > 0.0 {
-            Some((Ray::new(intersection.hit_point, scattered_ray), self.albedo))
+            Some(ScatteredResult {
+                ray: Ray::new(intersection.hit_point, scattered_ray),
+                albedo: self.albedo,
+                probability: 1.0,
+            })
         } else {
             None
         }
@@ -153,7 +157,7 @@ impl MaterialDielectric {
         incident_ray: &Ray,
         intersection: &RayIntersection,
         rand: &mut R,
-    ) -> Option<(Ray, Color3F)> {
+    ) -> Option<ScatteredResult> {
         let attenuation = Color3F::new(1.0, 1.0, 1.0);
 
         let refrac_index = if intersection.is_normal_outward {
@@ -175,7 +179,11 @@ impl MaterialDielectric {
             refract(&incident_ray.direction, &intersection.normal, refrac_index)
         };
 
-        Some((Ray::new(intersection.hit_point, out_dir), attenuation))
+        Some(ScatteredResult {
+            ray: Ray::new(intersection.hit_point, out_dir),
+            albedo: attenuation,
+            probability: 1.0,
+        })
     }
 
     fn reflectance(cos_in_angle: Fp, refrac_index: Fp) -> Fp {
@@ -202,12 +210,19 @@ impl Material {
         incident_ray: &Ray,
         intersection: &RayIntersection,
         rand: &mut R,
-    ) -> Option<(Ray, Color3F)> {
+    ) -> Option<ScatteredResult> {
         match self {
             Material::Diffuse(mat) => mat.scatter(intersection, rand),
             Material::Metal(mat) => mat.scatter(incident_ray, intersection, rand),
             Material::Dielectric(mat) => mat.scatter(incident_ray, intersection, rand),
             _ => None,
+        }
+    }
+
+    pub fn scattering_pdf(&self, surface_normal: &Vec3F, scattered_ray: &Ray) -> Fp {
+        match self {
+            Material::Diffuse(mat) => mat.scattering_pdf(surface_normal, scattered_ray),
+            _ => 1.0,
         }
     }
 
@@ -217,4 +232,62 @@ impl Material {
             _ => Color3F::zero(),
         }
     }
+}
+
+struct PdfSample {
+    dir: Vec3F,
+    probability: Fp,
+}
+
+// p(a, b) = cos(a)/PI, a is polar angle, b is azimuthal angle.
+struct PdfCosineHemisphere {}
+
+impl PdfCosineHemisphere {
+    pub fn new() -> Self {
+        Self {}
+    }
+
+    pub fn gen_sample<R: rand::Rng>(&self, rand: &mut R) -> PdfSample {
+        // The section 7.1 in the third book shows the CDF^-1 that takes two uniform
+        // random numbers r1, r2, to generate another two random spherical coordinates
+        // a, b with the distribution p(a, b) = f(a), where polar angle is the only
+        // input variable.
+        //
+        // Then the section 7.3 shows the equations to generate a, b with the distribution
+        // p(a, b) = cos(a)/PI.
+
+        let r1 = rand.gen_range(0.0..1.0);
+        let r2 = rand.gen_range(0.0..1.0);
+
+        let phi = 2.0 * PI * r1;
+        let x = phi.cos() * Fp::sqrt(r2);
+        let y = phi.sin() * Fp::sqrt(r2);
+        let z = Fp::sqrt(1.0 - r2); // z == cos(a)
+
+        let probability = z / PI;
+
+        PdfSample {
+            dir: Vec3F::new(x, y, z),
+            probability,
+        }
+    }
+}
+
+// Transform a vector in local space (constructed from another vector in world
+// space) to the world space.
+pub fn from_local_to_world_space(n: &Vec3F, local_v: &Vec3F) -> Vec3F {
+    // Construct the local space basis based `n`.
+
+    let local_axis_z = n.normalized();
+    // Check if world x-axis is almost parallel with n.
+    let tmp = if local_axis_z.x.abs() > 0.9 {
+        Vec3F::new(0.0, 1.0, 0.0)
+    } else {
+        Vec3F::new(1.0, 0.0, 0.0)
+    };
+    let local_axis_y = cross(&local_axis_z, &tmp).normalized();
+    let local_axis_x = cross(&local_axis_z, &local_axis_y);
+
+    // express local_v in the world space
+    (local_v.x * local_axis_x) + (local_v.y * local_axis_y) + (local_v.z * local_axis_z)
 }
