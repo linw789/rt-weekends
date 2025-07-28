@@ -70,7 +70,7 @@ fn trace_row<R: rand::Rng>(
 fn main() {
     const IMAGE_WIDTH: u32 = 1200;
     const IMAGE_HEIGHT: u32 = 800;
-    const PIXEL_SAMPLE_SIZE: usize = 400;
+    const PIXEL_SAMPLE_SIZE: usize = 100;
 
     let image = Mutex::new(Image::new(IMAGE_WIDTH, IMAGE_HEIGHT));
 
@@ -150,8 +150,10 @@ fn main() {
                 let mut sj = 0.0;
                 while si < sqrt_spp {
                     while sj < sqrt_spp {
-                        let rx = rand.gen_range((si * inv_sqrt_spp)..((si + 1.0) * inv_sqrt_spp));
-                        let ry = rand.gen_range((sj * inv_sqrt_spp)..((sj + 1.0) * inv_sqrt_spp));
+                        let rx_max = Fp::min((si + 1.0) * inv_sqrt_spp, 1.0);
+                        let rx = rand.gen_range((si * inv_sqrt_spp)..rx_max);
+                        let ry_max = Fp::min((sj + 1.0) * inv_sqrt_spp, 1.0);
+                        let ry = rand.gen_range((sj * inv_sqrt_spp)..ry_max);
                         pixel_samples.push((rx, ry));
                         sj += 1.0;
                     }

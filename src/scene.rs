@@ -4,12 +4,17 @@ use crate::materials::{
 };
 use crate::shapes::{create_box_quads, Aabb, Quad, Ray, RayIntersection, Shape, Sphere};
 use crate::types::Fp;
-use crate::vecmath::{Color3F, Vec3F};
+use crate::vecmath::{dot, Color3F, Vec3F, from_local_to_world_space, reflect};
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use std::ops::Range;
 use std::path::Path;
 use std::sync::Arc;
 use std::vec::Vec;
+
+#[cfg(not(feature = "use-f64"))]
+use std::f32::consts::PI;
+#[cfg(feature = "use-f64")]
+use std::f64::consts::PI;
 
 pub struct BvhLeaf {
     pub aabb: Aabb,
@@ -95,9 +100,66 @@ fn bvh_ray_intersect(
     }
 }
 
+struct PdfSample {
+    dir: Vec3F,
+    probability: Fp,
+}
+
+// p(a, b) = cos(a)/PI, a is polar angle, b is azimuthal angle.
+struct PdfCosineHemisphere {}
+
+impl PdfCosineHemisphere {
+    pub fn new() -> Self {
+        Self {}
+    }
+
+    pub fn gen_sample<R: rand::Rng>(&self, rand: &mut R) -> PdfSample {
+        // The section 7.1 in the third book shows the CDF^-1 that takes two uniform
+        // random numbers r1, r2, to generate another two random spherical coordinates
+        // a, b with the distribution p(a, b) = f(a), where polar angle is the only
+        // input variable.
+        //
+        // Then the section 7.3 shows the equations to generate a, b with the distribution
+        // p(a, b) = cos(a)/PI.
+
+        let r1 = rand.gen_range(0.0..1.0);
+        let r2 = rand.gen_range(0.0..1.0);
+
+        let phi = 2.0 * PI * r1;
+        let x = phi.cos() * Fp::sqrt(r2);
+        let y = phi.sin() * Fp::sqrt(r2);
+        let z = Fp::sqrt(1.0 - r2); // z == cos(a)
+
+        let probability = z / PI;
+
+        PdfSample {
+            dir: Vec3F::new(x, y, z),
+            probability,
+        }
+    }
+}
+
+/// `refrac_index` should be `in_refrac_index / out_refrac_index` where:
+/// in_refrac_index = the refractive index of the surface of the incident ray
+/// out_refrac_index = the refractive index of the surface of the outgoing ray
+fn refract(in_dir: &Vec3F, normal: &Vec3F, refrac_index: Fp) -> Vec3F {
+    let refrac_dir_perp = refrac_index * (in_dir - (dot(in_dir, normal) * normal));
+    let side_len = in_dir.length_squared() - refrac_dir_perp.length_squared();
+    let refrac_dir_parallel = -1.0 * Fp::sqrt(Fp::abs(side_len)) * normal;
+    refrac_dir_perp + refrac_dir_parallel
+}
+
+pub struct ScatterResult {
+    pub ray: Ray,
+    pub albedo: Color3F,
+    pub probability: Fp,
+    pub skip_pdf: bool,
+}
+
 pub struct Scene {
     materials: Vec<Arc<Material>>,
     shapes: Vec<Shape>,
+    lights: Vec<Shape>,
     // bvh: Arc<BvhNode>,
     is_background_sky: bool,
 }
@@ -120,6 +182,7 @@ impl Scene {
         Self {
             materials,
             shapes,
+            lights: Vec::new(),
             // bvh: build_bvh(&shapes, 0),
             is_background_sky: true,
         }
@@ -151,6 +214,7 @@ impl Scene {
         Self {
             materials,
             shapes,
+            lights: Vec::new(),
             // bvh: build_bvh(&shapes, 0),
             is_background_sky: true,
         }
@@ -179,6 +243,7 @@ impl Scene {
         Self {
             materials,
             shapes: globes,
+            lights: Vec::new(),
             // bvh: build_bvh(&globes, 0),
             is_background_sky: true,
         }
@@ -239,6 +304,7 @@ impl Scene {
         Self {
             materials,
             shapes,
+            lights: Vec::new(),
             // bvh: build_bvh(&shapes, 0),
             is_background_sky: true,
         }
@@ -294,6 +360,7 @@ impl Scene {
         Self {
             materials,
             shapes,
+            lights: Vec::new(),
             // bvh: build_bvh(&shapes, 0),
             is_background_sky: true,
         }
@@ -357,6 +424,7 @@ impl Scene {
         Self {
             materials,
             shapes,
+            lights: Vec::new(),
             // bvh: build_bvh(&shapes, 0),
             is_background_sky: true,
         }
@@ -456,6 +524,7 @@ impl Scene {
         Self {
             materials,
             shapes,
+            lights: Vec::new(),
             // bvh: build_bvh(&shapes, 0),
             is_background_sky: true,
         }
@@ -537,6 +606,7 @@ impl Scene {
         Self {
             materials,
             shapes,
+            lights: Vec::new(),
             // bvh: build_bvh(&shapes, 0),
             is_background_sky: true,
         }
@@ -556,11 +626,13 @@ impl Scene {
         let mat_light = Arc::new(Material::DiffuseLight(MaterialDiffuseLight::new(
             Color3F::new(15.0, 15.0, 15.0),
         )));
+        let mat_dielectric = Arc::new(Material::Dielectric(MaterialDielectric::new(1.5)));
         let materials = vec![
             Arc::clone(&mat_red),
             Arc::clone(&mat_white),
             Arc::clone(&mat_green),
             Arc::clone(&mat_light),
+            Arc::clone(&mat_dielectric),
         ];
 
         let mut shapes = vec![
@@ -612,6 +684,11 @@ impl Scene {
                 Vec3F::new(0.0, 0.0, 0.0),
                 0.0,
             )),
+            Shape::Sphere(Sphere::new(
+                Vec3F::new(190.0, 90.0, 190.0),
+                90.0,
+                Arc::clone(&mat_dielectric),
+            )),
         ];
         let box0 = create_box_quads(
             Vec3F::new(0.0, 0.0, 0.0),
@@ -621,6 +698,8 @@ impl Scene {
             15.0,
         );
         shapes.extend_from_slice(&box0);
+
+        /*
         let box1 = create_box_quads(
             Vec3F::new(0.0, 0.0, 0.0),
             Vec3F::new(165.0, 165.0, 165.0),
@@ -629,10 +708,30 @@ impl Scene {
             -18.0,
         );
         shapes.extend_from_slice(&box1);
+        */
+
+        // These light shapes are used for generating random direction towards light sources. The
+        // materials attached are ignored.
+        let lights = vec![
+            Shape::Quad(Quad::new(
+                Vec3F::new(343.0, 554.0, 332.0),
+                Vec3F::new(-130.0, 0.0, 0.0),
+                Vec3F::new(0.0, 0.0, -105.0),
+                Arc::clone(&mat_light),
+                Vec3F::new(0.0, 0.0, 0.0),
+                0.0,
+            )),
+            Shape::Sphere(Sphere::new(
+                Vec3F::new(190.0, 90.0, 190.0),
+                90.0,
+                Arc::clone(&mat_light),
+            )),
+        ];
 
         Self {
             materials,
             shapes,
+            lights,
             // bvh: build_bvh(&shapes, 0),
             is_background_sky: false,
         }
@@ -664,6 +763,100 @@ impl Scene {
             .build()
     }
 
+    fn pdf_mixure_sample<R: rand::Rng>(&self, origin: &Vec3F, rand: &mut R) -> (Vec3F, Fp) {
+        if self.lights.len() > 0 {
+            let light_index: usize = rand.gen_range(0..self.lights.len());
+            let random_dir = self.lights[light_index].gen_random_dir(origin, rand);
+
+            let weight = 1.0 / (self.lights.len() as Fp);
+            let mut sum = 0.0;
+            for shape in &self.lights {
+                let ray = Ray::new(origin.clone(), random_dir);
+                sum += weight * shape.pdf_value(&ray);
+            }
+
+            (random_dir, sum)
+        } else {
+            (Vec3F::zero(), 0.0)
+        }
+    }
+
+    fn scatter<R: rand::Rng>(incident_ray: &Ray, intersection: &RayIntersection, material: &Material, rand: &mut R) -> Option<ScatterResult> {
+        match material {
+            Material::Diffuse(mat) => {
+                let pdf = PdfCosineHemisphere::new();
+                let sample = pdf.gen_sample(rand);
+
+                // The sample direction generated is in the local space where the surface normal is the
+                // z-axis. Need to transform it into world space.
+                let scattered_ray = from_local_to_world_space(&intersection.normal, &sample.dir);
+
+                Some(ScatterResult {
+                    ray: Ray::new(intersection.hit_point, scattered_ray),
+                    albedo: mat.tex_color(intersection.u, intersection.v, intersection.hit_point),
+                    probability: sample.probability,
+                    skip_pdf: true,
+                })
+            }
+            Material::Metal(mat) => {
+                let reflected_dir = reflect(&incident_ray.direction, &intersection.normal);
+
+                let random_unit_dir = loop {
+                    let rand_dir = Vec3F::random_fp_range(rand, -1.0..1.0);
+                    let len_sqr = rand_dir.length_squared();
+                    if len_sqr <= 1.0 && len_sqr >= 1e-8 {
+                        break rand_dir / Fp::sqrt(len_sqr);
+                    }
+                };
+
+                let scattered_ray = reflected_dir.normalized() + mat.fuzz * random_unit_dir;
+
+                // If the `scattered_ray` points to the opposite direction as `intersection.normal`,
+                // discard it (as if the surface absorbs the `incident_ray`).
+                if dot(&scattered_ray, &intersection.normal) > 0.0 {
+                    Some(ScatterResult {
+                        ray: Ray::new(intersection.hit_point, scattered_ray),
+                        albedo: mat.albedo,
+                        probability: 1.0,
+                        skip_pdf: true,
+                    })
+                } else {
+                    None
+                }
+            }
+            Material::Dielectric(mat) => {
+                let attenuation = Color3F::new(1.0, 1.0, 1.0);
+
+                let refrac_index = if intersection.is_normal_outward {
+                    1.0 / mat.refrac_index
+                } else {
+                    mat.refrac_index
+                };
+
+                let in_dir_normalized = incident_ray.direction.normalized();
+                let cos_in_angle = Fp::min(dot(&in_dir_normalized, &(-intersection.normal)), 1.0);
+                let sin_in_angle = Fp::sqrt(1.0 - cos_in_angle * cos_in_angle);
+
+                let no_refract = (refrac_index * sin_in_angle) > 1.0;
+                let no_refract = no_refract
+                    || (MaterialDielectric::reflectance(cos_in_angle, refrac_index) > rand.gen_range(0.0..1.0));
+                let out_dir = if no_refract {
+                    reflect(&incident_ray.direction, &intersection.normal)
+                } else {
+                    refract(&incident_ray.direction, &intersection.normal, refrac_index)
+                };
+
+                Some(ScatterResult {
+                    ray: Ray::new(intersection.hit_point, out_dir),
+                    albedo: attenuation,
+                    probability: 1.0,
+                    skip_pdf: true,
+                })
+            }
+            _ => None
+        }
+    }
+
     pub fn trace<R: rand::Rng>(&self, ray: &Ray, rand: &mut R, depth: u32) -> Color3F {
         if depth > Self::TRACE_MAX_DEPTH {
             return Color3F::zero();
@@ -687,15 +880,24 @@ impl Scene {
         let color = if nearest_intersection.hit {
             let material = nearest_material.unwrap();
             let emission_color = material.emit();
-            match material.scatter(ray, &nearest_intersection, rand) {
+            match Self::scatter(ray, &nearest_intersection, &material, rand) {
                 Some(scattered) => {
-                    let scattering_pdf =
-                        material.scattering_pdf(&nearest_intersection.normal, &scattered.ray);
-                    let scatter_color = (scattered.albedo
-                        * scattering_pdf
-                        * self.trace(&scattered.ray, rand, depth + 1))
-                        / scattered.probability;
-                    scatter_color + emission_color
+                    if scattered.skip_pdf {
+                        scattered.albedo * self.trace(&scattered.ray, rand, depth + 1)
+                    } else {
+                        let (random_dir, pdf_value) = self.pdf_mixure_sample(&nearest_intersection.hit_point, rand);
+                        let scattered_ray = Ray::new(nearest_intersection.hit_point, random_dir);
+
+                        let scattering_pdf =
+                            material.scattering_pdf(&nearest_intersection.normal, &scattered_ray);
+
+                        let scatter_color = (scattered.albedo
+                            * scattering_pdf
+                            * self.trace(&scattered_ray, rand, depth + 1))
+                            / pdf_value;
+
+                        scatter_color + emission_color
+                    }
                 }
                 None => emission_color,
             }

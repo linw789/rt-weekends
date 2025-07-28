@@ -45,8 +45,8 @@ impl Camera {
     pub fn gen_ray<R: rand::Rng>(&self, w: u32, h: u32, rx: Fp, ry: Fp, rand: &mut R) -> Ray {
         // Generate a random ray bounded by the pixel cell.
 
-        assert!(rx >= 0.0 && rx < 1.0);
-        assert!(ry >= 0.0 && ry < 1.0);
+        assert!(rx >= 0.0 && rx < 1.0, "rx: {}", rx);
+        assert!(ry >= 0.0 && ry < 1.0, "ry: {}", ry);
 
         let random_sample = (rx - 0.5) * self.viewport_delta_u + (ry - 0.5) * self.viewport_delta_v;
 

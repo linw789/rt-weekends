@@ -1,6 +1,6 @@
 use crate::materials::Material;
 use crate::types::Fp;
-use crate::vecmath::{cross, dot, Vec3F};
+use crate::vecmath::{cross, dot, Vec3F, from_local_to_world_space};
 use std::ops::{Range, RangeInclusive};
 use std::sync::Arc;
 
@@ -47,6 +47,7 @@ pub struct Quad {
     pub normal: Vec3F,
     pub w: Vec3F,
     pub d: Fp,
+    pub area: Fp,
     pub material: Arc<Material>,
     pub translate: Vec3F,
     pub rot_y_sin: Fp,
@@ -150,6 +151,40 @@ impl Sphere {
         let theta = (-unit_sphere_p.y).acos(); // latitude
         (phi / (2.0 * PI), theta / PI)
     }
+
+    pub fn pdf_value(&self, ray: &Ray) -> Fp {
+        let limits = 0.001..Fp::MAX;
+        let intersection = self.ray_intersect(ray, &limits);
+        if intersection.hit {
+            let distance_sqr = (self.position - ray.origin).length_squared();
+            let cos_theta_max = Fp::sqrt(1.0 - self.radius * self.radius / distance_sqr);
+            let solid_angle = 2.0 * PI * (1.0 - cos_theta_max);
+            1.0 / solid_angle
+        } else {
+            0.0
+        }
+    }
+
+    pub fn gen_random_dir<R: rand::Rng>(&self, origin: &Vec3F, rand: &mut R) -> Vec3F {
+        // Use two uniform random numbers to generated a random point on the sphere's surface area
+        // defined by a solid angle.
+
+        let r1 = rand.gen_range(0.0..1.0);
+        let r2 = rand.gen_range(0.0..1.0);
+
+        let direction = self.position - origin;
+        let distance_sqr = direction.length_squared();
+        let z = 1.0 + r2 * (Fp::sqrt(1.0 - self.radius * self.radius/distance_sqr) - 1.0);
+
+        let phi = 2.0 * PI * r1;
+        let x = phi.cos() * Fp::sqrt(1.0 - z * z);
+        let y = phi.sin() * Fp::sqrt(1.0 - z * z);
+
+        let random_dir = Vec3F::new(x, y, z);
+
+        // Transform the point from the local space (where `direction` is the z-axis) to the world space.
+        from_local_to_world_space(&direction, &random_dir)
+    }
 }
 
 impl Quad {
@@ -162,6 +197,7 @@ impl Quad {
         rot_y_degree: Fp,
     ) -> Self {
         let n = cross(&edge0, &edge1);
+        let area = n.length();
         let n_len_sqr = n.length_squared();
         let normal = n / n_len_sqr.sqrt();
         let w = n / n_len_sqr;
@@ -173,6 +209,7 @@ impl Quad {
             normal,
             w,
             d,
+            area,
             material,
             translate,
             rot_y_sin,
@@ -243,6 +280,27 @@ impl Quad {
         }
 
         intersection
+    }
+
+    pub fn pdf_value(&self, ray: &Ray) -> Fp {
+        let limits = 0.001..Fp::MAX;
+        let intersection = self.ray_intersect(ray, &limits);
+        if intersection.hit {
+            // distance from ray origin to intersection point.
+            let distance_sqr = intersection.t * intersection.t * ray.direction.length_squared();
+            let cosine = dot(&ray.direction, &intersection.normal).abs() / ray.direction.length();
+            distance_sqr / (cosine * self.area)
+        } else {
+            0.0
+        }
+    }
+
+    // generate a direction from `origin` to a random point on the quad.
+    pub fn gen_random_dir<R: rand::Rng>(&self, origin: &Vec3F, rand: &mut R) -> Vec3F {
+        let p = self.corner
+            + rand.gen_range(0.0..1.0) * self.edges[0]
+            + rand.gen_range(0.0..1.0) * self.edges[1];
+        p - origin
     }
 }
 
@@ -451,6 +509,20 @@ impl Shape {
         match self {
             Shape::Sphere(s) => Arc::clone(&s.material),
             Shape::Quad(q) => Arc::clone(&q.material),
+        }
+    }
+
+    pub fn pdf_value(&self, ray: &Ray) -> Fp {
+        match self {
+            Shape::Sphere(s) => s.pdf_value(ray),
+            Shape::Quad(q) => q.pdf_value(ray),
+        }
+    }
+
+    pub fn gen_random_dir<R: rand::Rng>(&self, origin: &Vec3F, rand: &mut R) -> Vec3F {
+        match self {
+            Shape::Sphere(s) => s.gen_random_dir(origin, rand),
+            Shape::Quad(q) => q.gen_random_dir(origin, rand),
         }
     }
 }

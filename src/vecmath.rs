@@ -291,3 +291,26 @@ where
         a.x * b.y - a.y * b.x,
     )
 }
+
+// Transform a vector in local space (where `n` is the z-axis) to the world space.
+pub fn from_local_to_world_space(n: &Vec3F, local_v: &Vec3F) -> Vec3F {
+    // Construct the local space basis based `n`.
+
+    let local_axis_z = n.normalized();
+    // Check if world x-axis is almost parallel with n.
+    let tmp = if local_axis_z.x.abs() > 0.9 {
+        Vec3F::new(0.0, 1.0, 0.0)
+    } else {
+        Vec3F::new(1.0, 0.0, 0.0)
+    };
+    let local_axis_y = cross(&local_axis_z, &tmp).normalized();
+    let local_axis_x = cross(&local_axis_z, &local_axis_y);
+
+    // express local_v in the world space
+    (local_v.x * local_axis_x) + (local_v.y * local_axis_y) + (local_v.z * local_axis_z)
+}
+
+pub fn reflect(in_dir: &Vec3F, normal: &Vec3F) -> Vec3F {
+    in_dir - 2.0 * dot(in_dir, normal) * normal
+}
+
