@@ -159,7 +159,7 @@ Monte Carlo estimation
 Suppose we have a group of cherry trees with its height distribution as the following:
 
 height | 60 | 65 | 70 | 75 | 80 | 85 | total
--------|----|----|----|----|----|-----------
+-------|----|----|----|----|----|----|------
 size   | 30 | 30 | 80 | 100| 50 | 20 | 310
 
 Suppose we are only allowed to pick 10 samples, we can pick our samples based on the given discrete 
@@ -167,32 +167,34 @@ distribution:
 
 $$ 10*30/310 \approx 1, 10*30/310 \approx 1, 10*80/310 \approx 3, 10*100/310 \approx 3, 10*50/310 \approx 2, 10*20/310 \approx 1 $$
 
-\begin{align*}
+```math
+\begin{aligned}
 E &= \frac{1}{10}(60 + 65 + 70 + 70 + 70 + 75 + 75 + 75 + 80 + 80 + 85) \\
   &= 80.5
-\end{align*}
+\end{aligned}
+```
 
 In a continuous range [a, b], it's impossible to sum up all individual values in the range, so we similarly 
 pick a number of samples based on a given distribution.
 
-$$ I = \int_a^b x\cdot p(x)\,dx $$
+$$ I = \int_a^b x\cdot p(x) dx $$
 
 $p(x)$ is a probability density function. We can use Monte Carlo method to estimate the integral above:
 
-$$ E = \frac{1}{N}\sum_{i=1}^{n} x_i \;| x_i \sim p(x) $$
+$$ E = \frac{1}{N}\sum_{i=1}^{n} x_i | x_i \sim p(x) $$
 
 $x_i$ is randomly generated based on the distribution $p(x)$.
 
 Similarly, to estimate the expected value of f(x) where x falls in the continuous range [a, b] with a PDF p(x):
 
-$$ I = \int_a^b f(x)\cdot p(x)\,dx \approx E = \frac{1}{N}\sum_{i=1}^{n} f(x_i) \;| x_i \sim p(x) $$
+$$ I = \int_a^b f(x)\cdot p(x) dx \approx E = \frac{1}{N}\sum_{i=1}^{n} f(x_i) | x_i \sim p(x) $$
 
 Importance Sampling
 ===============================================================================
 
 ## Transform integration problem to expected value problem
 
-$$ \int_a^b f(x)\, dx = \int_a^b \frac{f(x)}{p(x)}p(x)\, dx $$
+$$ \int_a^b f(x) dx = \int_a^b \frac{f(x)}{p(x)}p(x) dx $$
 
 Now we can approximate the expected value of $\frac{f(x)}{p(x)}$ by the Monte Carlo method:
 
@@ -203,7 +205,7 @@ Notice we can choose any p(x), as long as p(x) > 0 when f(x) != 0.
 Intuitively, we can see that the smaller the variance of $\frac{f(x)}{p(x)}$ the fewer sample count is needed
 to estimate. Because if the variance is small, every sample we pick will be similar. Taking this to an extreme:
 if $\frac{f(x)}{p(x)}$ is a constant, we need zero sample count. But it's most often impossible to find such 
-p(x). The book gives an example of estimating $\int_0^2 x^2\; dx$, and find a $p(x)=\frac{3}{8}x^2$ that makes
+p(x). The book gives an example of estimating $\int_0^2 x^2 dx$, and find a $p(x)=\frac{3}{8}x^2$ that makes
 $\frac{f(x)}{p(x)}=\frac{8}{3}$. However, in this case, we already know how to integrate f(x) analytically, the 
 process of finding the perfect p(x) _is_ the same calculation as integration of f(x).
 
@@ -216,7 +218,7 @@ Monte Carlo Integration on the Sphere of Directions
 Integrating $f(\theta, \phi) = cos^2(\theta)$ over the surface of the unit sphere. Even though $\phi$ doesn't
 affect the function, we still need to take it into account when integrating:
 
-$$ \int_{0}^{2\pi} \int_{0}^{\pi} cos^2(\theta) dA \;| dA = sin(\theta) d\theta d\phi $$
+$$ \int_{0}^{2\pi} \int_{0}^{\pi} cos^2(\theta) dA | dA = sin(\theta) d\theta d\phi $$
 
 $dA$ is the differential area on the surface of the unit sphere, similar to $dx$ in single-variable integral.
 ChatGPT agrees that the result is $\frac{4}{3}\pi$.
@@ -261,27 +263,31 @@ all values of $\phi$.
 
 To get PDF $b(\theta)$:
 
-\begin{equation}
-b(\theta) = \int_{0}^{2\pi} p(w) \, sin(\theta) d\phi \nonumber \\
-p(w) = f(\theta) \\
-b(\theta) = \int_{0}^{2\pi} f(\theta) sin(\theta) \, d\phi \\
-\end{equation}
+``` math
+\begin{aligned}
+b(\theta) &= \int_{0}^{2\pi} p(w) sin(\theta) d\phi \nonumber \\
+p(w) &= f(\theta) \\
+b(\theta) &= \int_{0}^{2\pi} f(\theta) sin(\theta) d\phi \\
+\end{aligned}
+```
 
 Since $f(\theta)$ doesn't depend on $\phi$:
 
-$$ b(\theta) =  f(\theta) sin(\theta) \int_{0}^{2\pi} \, d\phi = 2\pi f(\theta)sin(\theta) $$
+$$ b(\theta) =  f(\theta) sin(\theta) \int_{0}^{2\pi} d\phi = 2\pi f(\theta)sin(\theta) $$
 
 To get PDF $a(\phi)$:
 
-$$ a(\phi) = \int_{0}^{\pi} f(\theta) \, sin(\theta) d\theta $$
+$$ a(\phi) = \int_{0}^{\pi} f(\theta) sin(\theta) d\theta $$
 
-Because $f(\theta)$ and $sin(\theta)$ don't depend on $\phi$, To $\phi$, $\int_{0}^{\pi} f(\theta) \, sin(\theta) d\theta$
+Because $f(\theta)$ and $sin(\theta)$ don't depend on $\phi$, To $\phi$, $\int_{0}^{\pi} f(\theta) sin(\theta) d\theta$
 is a constant C. We also know that the total probability of $a(\phi)$ is 1. We can calculate the constant as follows:
 
-\begin{equation}
-\int_{0}^{2\pi} a(\phi) \, d\phi = \int_{0}^{2\pi} C \, d\phi = 1 \nonumber \\
-C = \frac{1}{2\pi}
-\end{equation}
+``` math
+\begin{aligned}
+\int_{0}^{2\pi} a(\phi) d\phi &= \int_{0}^{2\pi} C d\phi = 1 \nonumber \\
+C &= \frac{1}{2\pi}
+\end{aligned}
+```
 
 Sampling Lights Directly
 ===============================================================================
@@ -306,8 +312,5 @@ auto cos_theta = dot(rec.normal, unit_vector(scattered.direction()));
 return cos_theta < 0 ? 0 : cos_theta/pi;
 ```
 
-It's check to make sure that if the randomly generated ray goes the opposite way as the hit surface normal (goes inside
+It checks to make sure that if the randomly generated ray goes the opposite way as the hit surface normal (goes inside
 the object), it returns 0, effectively discard this ray in the final computation.
-
-
-<!-- Markdeep: --><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js" charset="utf-8"></script><script src="https://morgan3d.github.io/markdeep/latest/markdeep.min.js" charset="utf-8"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
