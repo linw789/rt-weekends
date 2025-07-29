@@ -70,7 +70,7 @@ fn trace_row<R: rand::Rng>(
 fn main() {
     const IMAGE_WIDTH: u32 = 1200;
     const IMAGE_HEIGHT: u32 = 800;
-    const PIXEL_SAMPLE_SIZE: usize = 100;
+    const PIXEL_SAMPLE_SIZE: usize = 400;
 
     let image = Mutex::new(Image::new(IMAGE_WIDTH, IMAGE_HEIGHT));
 
