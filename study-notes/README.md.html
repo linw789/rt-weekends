@@ -294,4 +294,20 @@ light plane.
 
 ![Area Light PDF](https://www.scratchapixel.com/images/introduction-to-lighting/intro-lighting-spherical-polygon2.png)
 
+Cleaning Up PDF Management
+===============================================================================
+
+## Diffuse Versus Specular
+
+Notice in the listing 48:
+
+```c++
+auto cos_theta = dot(rec.normal, unit_vector(scattered.direction()));
+return cos_theta < 0 ? 0 : cos_theta/pi;
+```
+
+It's check to make sure that if the randomly generated ray goes the opposite way as the hit surface normal (goes inside
+the object), it returns 0, effectively discard this ray in the final computation.
+
+
 <!-- Markdeep: --><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js" charset="utf-8"></script><script src="https://morgan3d.github.io/markdeep/latest/markdeep.min.js" charset="utf-8"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
